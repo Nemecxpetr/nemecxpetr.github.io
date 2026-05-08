@@ -1,0 +1,197 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f8f3ec;
+  --fg: #111111;
+  --muted: rgba(17, 17, 17, 0.68);
+  --hairline: rgba(17, 17, 17, 0.16);
+  --panel: rgba(248, 243, 236, 0.82);
+  --blue: #1daada;
+  --green: #6b8d52;
+  --orange: #c67e2c;
+  --red: #b94735;
+  --font-main: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0d0d;
+    --fg: #faf5ef;
+    --muted: rgba(250, 245, 239, 0.68);
+    --hairline: rgba(250, 245, 239, 0.18);
+    --panel: rgba(13, 13, 13, 0.76);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    linear-gradient(var(--hairline) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hairline) 1px, transparent 1px),
+    var(--bg);
+  background-size: 28px 28px, 28px 28px, auto;
+  color: var(--fg);
+  font-family: var(--font-main);
+}
+
+.bassoon-page {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(0.75rem, 2vw, 1.2rem);
+  padding: clamp(0.85rem, 2vw, 1.35rem);
+}
+
+.bassoon-header {
+  display: grid;
+  gap: 0.32rem;
+  max-width: 920px;
+}
+
+.eyebrow,
+.subtitle,
+.bassoon-header h1 {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font: 600 0.72rem/1.1 var(--font-main);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bassoon-header h1 {
+  font: 600 clamp(2rem, 6vw, 5.6rem)/0.95 var(--font-main);
+}
+
+.subtitle {
+  max-width: 760px;
+  color: var(--muted);
+  font: 400 clamp(0.86rem, 1.7vw, 1rem)/1.5 var(--font-main);
+}
+
+.bassoon-stage {
+  position: relative;
+  min-height: 520px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 24% 24%, color-mix(in srgb, var(--blue) 10%, transparent), transparent 28%),
+    radial-gradient(circle at 78% 72%, color-mix(in srgb, var(--orange) 12%, transparent), transparent 30%),
+    color-mix(in srgb, var(--bg) 94%, var(--fg) 6%);
+}
+
+#bassoon-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.bassoon-panel {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  padding: 0.72rem 0.8rem;
+  pointer-events: none;
+}
+
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.48rem;
+  pointer-events: auto;
+}
+
+.panel-label,
+.panel-value {
+  margin: 0;
+}
+
+.panel-label {
+  color: var(--muted);
+  font: 600 0.68rem/1.1 var(--font-main);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel-value {
+  color: var(--fg);
+  font: 500 0.88rem/1.35 var(--font-main);
+}
+
+.reset-button {
+  border: 1px solid var(--hairline);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  color: var(--fg);
+  font: 600 0.78rem/1 var(--font-main);
+  padding: 0.58rem 0.72rem;
+  cursor: pointer;
+}
+
+.reset-button:hover,
+.reset-button:focus-visible {
+  border-color: currentColor;
+  outline: none;
+}
+
+.sound-toggle {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 10px);
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  z-index: 20;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-main);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .bassoon-page {
+    padding: 0.7rem;
+  }
+
+  .bassoon-stage,
+  #bassoon-canvas {
+    min-height: 68dvh;
+  }
+
+  .bassoon-panel {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .panel-actions {
+    justify-content: flex-start;
+  }
+}

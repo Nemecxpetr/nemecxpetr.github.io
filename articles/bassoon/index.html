@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <meta name="description" content="Bassoon transmission-line node game." />
+  <title>Bassoon</title>
+
+  <link rel="icon" type="image/png" href="../../assets/favicon_1.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./bassoon.css" />
+</head>
+<body>
+  <main class="bassoon-page">
+    <header class="bassoon-header">
+      <p class="eyebrow">Interactive Article</p>
+      <h1>Bassoon</h1>
+      <p class="subtitle">Bassoon and contrabassoon giants forming transmission grids through connected breath, greeting tones, and plucked responses.</p>
+    </header>
+
+    <section class="bassoon-stage" aria-label="Bassoon node simulator">
+      <canvas id="bassoon-canvas" aria-label="Connect dots by dragging from one dot to another."></canvas>
+      <div class="bassoon-panel" aria-live="polite">
+        <div>
+          <p class="panel-label">Network</p>
+          <p id="bassoon-status" class="panel-value">0 strings / no giant grid</p>
+        </div>
+        <div class="panel-actions">
+          <button id="bassoon-lightning" class="reset-button" type="button">Lightning</button>
+          <button id="bassoon-undo" class="reset-button" type="button">Undo string</button>
+          <button id="bassoon-reset" class="reset-button" type="button">Reset</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="../../main.js"></script>
+  <script type="module" src="./bassoon.js"></script>
+</body>
+</html>
