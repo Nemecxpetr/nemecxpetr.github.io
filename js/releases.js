@@ -883,9 +883,59 @@ function initReleaseModeControl(modeControlEl, modeStageEl, initialMode) {
   };
 
   if (slider) {
+    let isPointerDragging = false;
+
+    const getControlProgressFromClientX = (clientX) => {
+      const rect = modeControlEl.getBoundingClientRect();
+      const styles = window.getComputedStyle(modeControlEl);
+      const paddingLeft = Number.parseFloat(styles.paddingLeft) || 0;
+      const paddingRight = Number.parseFloat(styles.paddingRight) || 0;
+      const left = rect.left + paddingLeft;
+      const width = Math.max(1, rect.width - paddingLeft - paddingRight);
+      return clamp01((clientX - left) / width);
+    };
+
+    const applyProgressFromPointer = (event) => {
+      applyProgress(getControlProgressFromClientX(event.clientX));
+    };
+
     slider.addEventListener("input", () => {
       applyProgress(slider.value, { syncSlider: false });
     });
+
+    modeControlEl.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || !event.isPrimary) {
+        return;
+      }
+      isPointerDragging = true;
+      modeControlEl.classList.add("is-dragging");
+      modeControlEl.setPointerCapture(event.pointerId);
+      slider.focus({ preventScroll: true });
+      applyProgressFromPointer(event);
+      event.preventDefault();
+    });
+
+    modeControlEl.addEventListener("pointermove", (event) => {
+      if (!isPointerDragging || !event.isPrimary) {
+        return;
+      }
+      applyProgressFromPointer(event);
+      event.preventDefault();
+    });
+
+    const finishPointerDrag = (event) => {
+      if (!isPointerDragging) {
+        return;
+      }
+      isPointerDragging = false;
+      modeControlEl.classList.remove("is-dragging");
+      if (modeControlEl.hasPointerCapture(event.pointerId)) {
+        modeControlEl.releasePointerCapture(event.pointerId);
+      }
+    };
+
+    modeControlEl.addEventListener("pointerup", finishPointerDrag);
+    modeControlEl.addEventListener("pointercancel", finishPointerDrag);
   }
 
   applyMode(safeInitial);

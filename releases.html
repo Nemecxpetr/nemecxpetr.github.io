@@ -47,8 +47,14 @@
       </div>
 
       <div class="release-mode-stage" id="release-mode-stage">
-        <div class="release-list release-panel is-active" id="past-releases" data-release-mode="past"></div>
-        <div class="release-list release-panel" id="upcoming-releases-full" data-release-mode="upcoming"></div>
+        <div class="release-panel is-active" id="past-releases-panel" data-release-mode="past">
+          <h2 class="release-print-heading">Past events</h2>
+          <div class="release-list" id="past-releases"></div>
+        </div>
+        <div class="release-panel" id="upcoming-releases-panel" data-release-mode="upcoming">
+          <h2 class="release-print-heading">Upcoming events</h2>
+          <div class="release-list" id="upcoming-releases-full"></div>
+        </div>
       </div>
     </section>
 
@@ -60,4 +66,3 @@
   <script type="module" src="main.js"></script>
 </body>
 </html>
-
