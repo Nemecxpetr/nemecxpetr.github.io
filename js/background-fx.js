@@ -86,10 +86,9 @@ export function initBackgroundFx({
   let previousBodyTouchAction = "";
   let phoneFxTouchActive = false;
   let phoneFxTouchPointerId = null;
-  let phoneFxTouchWords = [];
-  let phoneFxStartedAt = 0;
-  let phoneFxStartX = 0;
-  let phoneFxStartY = 0;
+  const phoneFxMarks = [];
+  let lastPhoneFxMarkX = null;
+  let lastPhoneFxMarkY = null;
   let lastAccentX = null;
   let lastAccentY = null;
   let lastAccentEmitAt = -Infinity;
@@ -186,14 +185,7 @@ export function initBackgroundFx({
   }
 
   function isPhoneFxMode() {
-    const smallViewport = window.innerWidth <= 720;
-    if (!smallViewport) {
-      return false;
-    }
-    const touchCapable = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
-    const coarseMedia = typeof window.matchMedia === "function"
-      && (window.matchMedia("(hover: none)").matches || window.matchMedia("(any-pointer: coarse)").matches);
-    return isCoarsePointer || touchCapable || coarseMedia;
+    return window.innerWidth <= 720;
   }
 
   function isInteractiveTarget(target) {
@@ -539,7 +531,9 @@ export function initBackgroundFx({
     lockedConnections.length = 0;
     pendingTrace = [];
     pairStartAnchor = null;
-    phoneFxTouchWords = [];
+    phoneFxMarks.length = 0;
+    lastPhoneFxMarkX = null;
+    lastPhoneFxMarkY = null;
     lastAccentX = null;
     lastAccentY = null;
     lastAccentEmitAt = -Infinity;
@@ -563,49 +557,76 @@ export function initBackgroundFx({
     clearAllGameVisuals();
   }
 
-  function convertPhoneWordsToDots() {
-    for (let i = 0; i < lockedConnections.length; i += 1) {
-      const connection = lockedConnections[i];
-      const anchors = [connection.a, connection.b];
-      for (let j = 0; j < anchors.length; j += 1) {
-        if (anchors[j].word || anchors[j].hiddenWord) {
-          anchors[j].hiddenWord = anchors[j].word || anchors[j].hiddenWord;
-          anchors[j].isWord = false;
-          anchors[j].word = null;
-        }
-      }
+  function emitPhoneFxMark(x, y, ts, force = false) {
+    if ((!wordPool || wordPool.length === 0) && wordSourceSelector) {
+      loadWordPoolFromDom();
+    }
+    if (!wordPool || wordPool.length === 0) {
+      return false;
+    }
+    const spacingSq = settings.wordMinSpacing * settings.wordMinSpacing;
+    if (
+      !force &&
+      lastPhoneFxMarkX !== null &&
+      lastPhoneFxMarkY !== null &&
+      distSq(x, y, lastPhoneFxMarkX, lastPhoneFxMarkY) < spacingSq
+    ) {
+      return false;
     }
 
-    if (pairStartAnchor && (pairStartAnchor.word || pairStartAnchor.hiddenWord)) {
-      pairStartAnchor.hiddenWord = pairStartAnchor.word || pairStartAnchor.hiddenWord;
-      pairStartAnchor.isWord = false;
-      pairStartAnchor.word = null;
+    const word = pickWord();
+    if (!word) {
+      return false;
     }
 
-    for (let i = 0; i < phoneFxTouchWords.length; i += 1) {
-      const wordPoint = phoneFxTouchWords[i];
-      if (wordPoint && (wordPoint.word || wordPoint.hiddenWord)) {
-        wordPoint.hiddenWord = wordPoint.word || wordPoint.hiddenWord;
-        wordPoint.word = null;
-      }
+    const size = settings.baseDotSize + settings.accentMaxExtraSize * 0.72;
+    phoneFxMarks.push({
+      x,
+      y,
+      size,
+      word,
+      generatedAt: ts
+    });
+    if (phoneFxMarks.length > settings.maxPoints) {
+      phoneFxMarks.splice(0, phoneFxMarks.length - settings.maxPoints);
     }
+    lastPhoneFxMarkX = x;
+    lastPhoneFxMarkY = y;
+    return true;
   }
 
-  function restorePhoneDotsToWords() {
-    for (let i = 0; i < lockedConnections.length; i += 1) {
-      const connection = lockedConnections[i];
-      const anchors = [connection.a, connection.b];
-      for (let j = 0; j < anchors.length; j += 1) {
-        if (anchors[j].hiddenWord) {
-          anchors[j].isWord = true;
-          anchors[j].word = anchors[j].hiddenWord;
-        }
-      }
+  function renderPhoneFxMarks() {
+    if (phoneFxMarks.length === 0) {
+      return;
     }
 
-    if (pairStartAnchor && pairStartAnchor.hiddenWord) {
-      pairStartAnchor.isWord = true;
-      pairStartAnchor.word = pairStartAnchor.hiddenWord;
+    for (let i = 1; i < phoneFxMarks.length; i += 1) {
+      const prev = phoneFxMarks[i - 1];
+      const curr = phoneFxMarks[i];
+      ctx.strokeStyle = rgba(GRAY_LINE, 0.34);
+      ctx.lineWidth = Math.max(0.7, ((prev.size + curr.size) * 0.22));
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(curr.x, curr.y);
+      ctx.stroke();
+    }
+
+    for (let i = 0; i < phoneFxMarks.length; i += 1) {
+      const mark = phoneFxMarks[i];
+      if (phoneFxTouchActive) {
+        const fontSize = Math.max(12, mark.size * 3.4);
+        ctx.font = `600 ${Math.round(fontSize)}px ${wordFont || "serif"}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = rgba(ACCENT_COLOR, 0.96);
+        ctx.fillText(mark.word, mark.x, mark.y);
+      } else {
+        const radius = Math.max(2.8, mark.size);
+        ctx.fillStyle = rgba(ACCENT_COLOR, 1);
+        ctx.beginPath();
+        ctx.arc(mark.x, mark.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 
@@ -947,9 +968,6 @@ export function initBackgroundFx({
       word,
       hiddenWord: word
     });
-    if (phoneFxTouchActive) {
-      phoneFxTouchWords.push(point);
-    }
     if (miniModeActive && wordSessionActive) {
       registerPairAnchor({
         x,
@@ -1023,6 +1041,8 @@ export function initBackgroundFx({
     if ((miniModeActive || secretZoneActive) && pendingTrace.length > 1) {
       renderTraceAsTrail(pendingTrace, ts);
     }
+
+    renderPhoneFxMarks();
 
     for (let i = 1; i < trail.length; i += 1) {
       const prev = trail[i - 1];
@@ -1134,6 +1154,7 @@ export function initBackgroundFx({
     const shouldEmit = !gameStopped
       && zoneEnabled
       && pointer.active
+      && !phoneFxTouchActive
       && (emitDistSq > spacing * spacing || ts - lastEmitAt > idleEmitMs);
 
     if (shouldEmit) {
@@ -1260,6 +1281,7 @@ export function initBackgroundFx({
       pointer.y = ev.clientY;
       pointer.targetX = ev.clientX;
       pointer.targetY = ev.clientY;
+      emitPhoneFxMark(ev.clientX, ev.clientY, now);
       appendPendingTracePoint(
         ev.clientX,
         ev.clientY,
@@ -1282,7 +1304,7 @@ export function initBackgroundFx({
       ? ev.target
       : document.elementFromPoint(ev.clientX, ev.clientY);
     if (
-      isMobileStrokeInput(ev)
+      isPhoneFxMode()
       && isLeft
       && isPhoneFxTouchZone(ev.clientX, ev.clientY, downTarget)
       && !gameStopped
@@ -1291,18 +1313,22 @@ export function initBackgroundFx({
       coarseStrokeActive = false;
       phoneFxTouchActive = true;
       phoneFxTouchPointerId = ev.pointerId;
-      phoneFxTouchWords = [];
-      phoneFxStartedAt = now;
-      phoneFxStartX = ev.clientX;
-      phoneFxStartY = ev.clientY;
+      phoneFxMarks.length = 0;
+      lastPhoneFxMarkX = null;
+      lastPhoneFxMarkY = null;
       lastWordX = null;
       lastWordY = null;
       lastAccentX = null;
       lastAccentY = null;
-      restorePhoneDotsToWords();
       setMiniModeActive(true);
-      wordSessionActive = true;
-      setWordsActive(true);
+      wordSessionActive = false;
+      setWordsActive(false);
+      pointer.x = ev.clientX;
+      pointer.y = ev.clientY;
+      pointer.targetX = ev.clientX;
+      pointer.targetY = ev.clientY;
+      pointer.active = true;
+      emitPhoneFxMark(ev.clientX, ev.clientY, now, true);
       onPointerMove(ev);
       const captureTarget = ev.target instanceof Element ? ev.target : canvas;
       if (captureTarget && typeof captureTarget.setPointerCapture === "function") {
@@ -1371,34 +1397,8 @@ export function initBackgroundFx({
     const isLeft = !isMouse || ev.button === 0;
 
     if (phoneFxTouchActive && isLeft && ev.pointerId === phoneFxTouchPointerId) {
-      const tapDurationMs = now - phoneFxStartedAt;
-      const moveToleranceSq = settings.coarseTapMoveTolerancePx * settings.coarseTapMoveTolerancePx;
-      const travelSq = distSq(ev.clientX, ev.clientY, phoneFxStartX, phoneFxStartY);
-      const moved = travelSq > moveToleranceSq;
-      const isTap = !moved && tapDurationMs <= settings.coarseTapMaxDurationMs;
-      const doubleTapDistanceSq = settings.coarseDoubleTapDistancePx * settings.coarseDoubleTapDistancePx;
-      const isDoubleTap = isTap
-        && now - lastCoarseTapAt <= settings.coarseDoubleTapWindowMs
-        && distSq(ev.clientX, ev.clientY, lastCoarseTapX, lastCoarseTapY) <= doubleTapDistanceSq;
-
-      if (isDoubleTap) {
-        clearAllGameVisuals();
-        lastCoarseTapAt = -Infinity;
-      } else {
-        convertPhoneWordsToDots();
-        if (isTap) {
-          lastCoarseTapAt = now;
-          lastCoarseTapX = ev.clientX;
-          lastCoarseTapY = ev.clientY;
-        } else {
-          lastCoarseTapAt = -Infinity;
-        }
-      }
-
       phoneFxTouchActive = false;
       phoneFxTouchPointerId = null;
-      phoneFxTouchWords = [];
-      phoneFxStartedAt = 0;
       coarseStrokeActive = false;
       coarseTapStart = null;
       if (
@@ -1485,7 +1485,6 @@ export function initBackgroundFx({
     }
     const wasPhoneFxTouchActive = phoneFxTouchActive;
     if (wasPhoneFxTouchActive) {
-      convertPhoneWordsToDots();
       wordSessionActive = false;
     }
     pointer.active = false;
@@ -1496,8 +1495,6 @@ export function initBackgroundFx({
     coarseCaptureEl = null;
     phoneFxTouchActive = false;
     phoneFxTouchPointerId = null;
-    phoneFxTouchWords = [];
-    phoneFxStartedAt = 0;
     setTouchScrollLock(false);
     if (!wasPhoneFxTouchActive) {
       endWordSession();
@@ -1524,8 +1521,6 @@ export function initBackgroundFx({
       coarseCaptureEl = null;
       phoneFxTouchActive = false;
       phoneFxTouchPointerId = null;
-      phoneFxTouchWords = [];
-      phoneFxStartedAt = 0;
       setTouchScrollLock(false);
     });
   }
