@@ -1,6 +1,55 @@
-assets/CV_2026.pdf
-articles/output/czech-scene-sound.pdf
-articles/export-article-pdf.ps1
-articles/output/article-template.pdf
-cv/
+# Local tooling and scripts
+*.ps1
+*.bat
+*.cmd
+*.sh
+
+# Local temporary directories
+.tmp/
+tmp/
+temp/
+assets/.press-package-build/
+
+# Generated exports and downloadable packages
 output/
+articles/output/
+*.zip
+*.pdf
+
+# Public download linked from the site.
+!assets/Petr_Nemec_PR_media_package.zip
+
+# Allow intentionally published, dated portfolio PDFs only.
+!assets/portfolio/
+!assets/portfolio/portfolio-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].pdf
+
+# LaTeX build byproducts
+cv/generated/
+cv/*.aux
+cv/*.log
+cv/*.out
+cv/*.toc
+cv/*.fls
+cv/*.fdb_latexmk
+cv/*.synctex.gz
+
+# Large/raw media and analysis artifacts
+*.wav
+*.aif
+*.aiff
+*.flac
+*.mp3
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.npy
+*.npz
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
