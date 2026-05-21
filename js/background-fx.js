@@ -568,21 +568,44 @@ export function initBackgroundFx({
       const connection = lockedConnections[i];
       const anchors = [connection.a, connection.b];
       for (let j = 0; j < anchors.length; j += 1) {
-        anchors[j].isWord = false;
-        anchors[j].word = null;
+        if (anchors[j].word || anchors[j].hiddenWord) {
+          anchors[j].hiddenWord = anchors[j].word || anchors[j].hiddenWord;
+          anchors[j].isWord = false;
+          anchors[j].word = null;
+        }
       }
     }
 
-    if (pairStartAnchor) {
+    if (pairStartAnchor && (pairStartAnchor.word || pairStartAnchor.hiddenWord)) {
+      pairStartAnchor.hiddenWord = pairStartAnchor.word || pairStartAnchor.hiddenWord;
       pairStartAnchor.isWord = false;
       pairStartAnchor.word = null;
     }
 
     for (let i = 0; i < phoneFxTouchWords.length; i += 1) {
       const wordPoint = phoneFxTouchWords[i];
-      if (wordPoint && wordPoint.word) {
+      if (wordPoint && (wordPoint.word || wordPoint.hiddenWord)) {
+        wordPoint.hiddenWord = wordPoint.word || wordPoint.hiddenWord;
         wordPoint.word = null;
       }
+    }
+  }
+
+  function restorePhoneDotsToWords() {
+    for (let i = 0; i < lockedConnections.length; i += 1) {
+      const connection = lockedConnections[i];
+      const anchors = [connection.a, connection.b];
+      for (let j = 0; j < anchors.length; j += 1) {
+        if (anchors[j].hiddenWord) {
+          anchors[j].isWord = true;
+          anchors[j].word = anchors[j].hiddenWord;
+        }
+      }
+    }
+
+    if (pairStartAnchor && pairStartAnchor.hiddenWord) {
+      pairStartAnchor.isWord = true;
+      pairStartAnchor.word = pairStartAnchor.hiddenWord;
     }
   }
 
@@ -730,7 +753,7 @@ export function initBackgroundFx({
     return { hit, strength };
   }
 
-  function pushPoint({ x, y, accent, size, word }) {
+  function pushPoint({ x, y, accent, size, word, hiddenWord = null }) {
     const point = {
       x,
       y,
@@ -738,7 +761,8 @@ export function initBackgroundFx({
       maxLife: accent ? settings.accentLife : settings.baseLife,
       size,
       accent,
-      word
+      word,
+      hiddenWord
     };
     trail.push(point);
 
@@ -920,7 +944,8 @@ export function initBackgroundFx({
       y,
       accent: true,
       size,
-      word
+      word,
+      hiddenWord: word
     });
     if (phoneFxTouchActive) {
       phoneFxTouchWords.push(point);
@@ -933,7 +958,8 @@ export function initBackgroundFx({
         generatedAt: ts,
         isSecretZone: secretZoneActive,
         isWord: true,
-        word
+        word,
+        hiddenWord: word
       }, ts);
     }
     lastWordX = x;
@@ -1273,6 +1299,7 @@ export function initBackgroundFx({
       lastWordY = null;
       lastAccentX = null;
       lastAccentY = null;
+      restorePhoneDotsToWords();
       setMiniModeActive(true);
       wordSessionActive = true;
       setWordsActive(true);
