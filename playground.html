@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Playground for cursor and touch text effects" />
+  <title>Petr Němec — Playground</title>
+
+  <link rel="icon" type="image/png" href="assets/favicon_1.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body data-playground-page="true">
+  <div class="mask-layer" aria-hidden="true">
+    <img id="maskImg" class="mask-img" src="assets/background.jpg" alt="" decoding="async" />
+  </div>
+
+  <canvas
+    id="fx"
+    data-active-zone-selector=".playground-stage"
+    data-mask-area-selector=".playground-stage"
+    data-word-source-selector="#playground-word-source"
+    aria-hidden="true"></canvas>
+
+  <main class="playground-page">
+    <nav class="playground-toolbar" aria-label="Playground controls">
+      <a class="back-link" href="index.html">Back</a>
+      <label class="btn playground-file-control">
+        <i class="fa-regular fa-file-lines" aria-hidden="true"></i>
+        <span id="playground-file-label">Load text</span>
+        <input id="playground-word-file" type="file" accept=".txt,text/plain" />
+      </label>
+    </nav>
+
+    <section class="playground-stage" aria-label="Cursor and touch effects playground"></section>
+    <p id="playground-word-source" class="sr-only">imagination listening vibration memory touch cursor trace sound body space presence</p>
+  </main>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
