@@ -1420,12 +1420,6 @@ export function initBackgroundFx({
     return true;
   }
 
-  function preventPhoneFxDefault(event) {
-    if (event && event.cancelable) {
-      event.preventDefault();
-    }
-  }
-
   function handlePhoneFxTouchStart(event) {
     if (!shouldHandlePhoneFxTouchEvent(event)) {
       return true;
@@ -1453,7 +1447,6 @@ export function initBackgroundFx({
       now - lastPhoneFxTapAt < 80 &&
       distSq(touch.clientX, touch.clientY, lastPhoneFxTapX, lastPhoneFxTapY) <= 16
     ) {
-      preventPhoneFxDefault(event);
       return true;
     }
 
@@ -1464,7 +1457,6 @@ export function initBackgroundFx({
       phoneFxPointerId = null;
       phoneFxTouchIdentifier = null;
       setTouchScrollLock(false);
-      preventPhoneFxDefault(event);
       return true;
     }
     rememberPhoneFxTap(touch.clientX, touch.clientY, now);
@@ -1488,10 +1480,8 @@ export function initBackgroundFx({
     pointer.active = true;
     miniModeActive = true;
     secretZoneActive = isPointInsideElement(touch.clientX, touch.clientY, secretVideoBlock);
-    setTouchScrollLock(true);
     emitPhoneFxMark(touch.clientX, touch.clientY, now, true);
     syncFxCursorHintState();
-    preventPhoneFxDefault(event);
     return true;
   }
 
@@ -1511,7 +1501,6 @@ export function initBackgroundFx({
       phoneFxTouchIdentifier = touch.identifier;
     }
     updatePhoneFxPosition(touch.clientX, touch.clientY, performance.now());
-    preventPhoneFxDefault(event);
     return true;
   }
 
@@ -1537,7 +1526,6 @@ export function initBackgroundFx({
     pendingTrace = [];
     setTouchScrollLock(false);
     syncFxCursorHintState();
-    preventPhoneFxDefault(event);
     return true;
   }
 
@@ -1844,14 +1832,14 @@ export function initBackgroundFx({
   window.addEventListener("pointerdown", onPointerDown, { passive: false });
   window.addEventListener("pointerup", onPointerUp, { passive: false });
   window.addEventListener("pointercancel", onPointerUp, { passive: false });
-  window.addEventListener("touchstart", handlePhoneFxTouchStart, { passive: false });
-  window.addEventListener("touchmove", handlePhoneFxTouchMove, { passive: false });
-  window.addEventListener("touchend", handlePhoneFxTouchEnd, { passive: false });
-  window.addEventListener("touchcancel", handlePhoneFxTouchEnd, { passive: false });
-  document.addEventListener("touchstart", handlePhoneFxTouchStart, { passive: false, capture: true });
-  document.addEventListener("touchmove", handlePhoneFxTouchMove, { passive: false, capture: true });
-  document.addEventListener("touchend", handlePhoneFxTouchEnd, { passive: false, capture: true });
-  document.addEventListener("touchcancel", handlePhoneFxTouchEnd, { passive: false, capture: true });
+  window.addEventListener("touchstart", handlePhoneFxTouchStart, { passive: true });
+  window.addEventListener("touchmove", handlePhoneFxTouchMove, { passive: true });
+  window.addEventListener("touchend", handlePhoneFxTouchEnd, { passive: true });
+  window.addEventListener("touchcancel", handlePhoneFxTouchEnd, { passive: true });
+  document.addEventListener("touchstart", handlePhoneFxTouchStart, { passive: true, capture: true });
+  document.addEventListener("touchmove", handlePhoneFxTouchMove, { passive: true, capture: true });
+  document.addEventListener("touchend", handlePhoneFxTouchEnd, { passive: true, capture: true });
+  document.addEventListener("touchcancel", handlePhoneFxTouchEnd, { passive: true, capture: true });
   window.addEventListener("scroll", handlePhoneFxScroll, { passive: true });
   window.addEventListener("pointerleave", onPointerLeave);
   window.addEventListener("blur", onPointerLeave);
