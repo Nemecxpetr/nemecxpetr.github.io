@@ -1016,19 +1016,39 @@ body[data-release-page="true"].print-mode .release-secondary-action {
 }
 
 .playground-toolbar {
+  position: relative;
   justify-self: center;
   width: min(100%, var(--maxw));
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   pointer-events: auto;
+}
+
+.playground-toolbar-actions {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .playground-file-control {
   position: relative;
   cursor: pointer;
 }
+
+.btn.btn-red {
+  border-color: #b94735;
+  color: #b94735;
+}
+
+.btn.btn-red:hover {
+  background: rgba(185, 71, 53, 0.08);
+}
+
 
 .playground-file-control input {
   position: absolute;

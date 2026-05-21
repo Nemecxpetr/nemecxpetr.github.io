@@ -281,6 +281,8 @@ function initPlaygroundWordFile() {
   const input = document.getElementById("playground-word-file");
   const source = document.getElementById("playground-word-source");
   const label = document.getElementById("playground-file-label");
+  const resetButton = document.getElementById("playground-word-reset");
+  const defaultWordSource = source ? source.textContent || "" : "";
 
   if (!(input instanceof HTMLInputElement) || !source) {
     return;
@@ -305,6 +307,18 @@ function initPlaygroundWordFile() {
       }
     }
   });
+
+  if (resetButton) {
+    resetButton.addEventListener("click", () => {
+      source.textContent = defaultWordSource;
+      if (input) {
+        input.value = "";
+      }
+      if (label) {
+        label.textContent = "Load text";
+      }
+    });
+  }
 }
 
 function getBackgroundFxOptions() {
