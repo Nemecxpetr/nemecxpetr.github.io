@@ -352,13 +352,20 @@ function getTodayUtcDateValue() {
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 }
 
-function getReleaseTemporalMode(item, todayUtcDateValue = getTodayUtcDateValue()) {
-  const status = (cleanText(item && item.status) || cleanText(item && item.temporalStatus)).toLowerCase();
-  if (status === RELEASE_MODE_PAST || status === RELEASE_MODE_UPCOMING) {
-    return status;
+function getReleaseBoundaryDateValue(item) {
+  const endDateValue = toDateValue(item && item.dateEnd);
+  if (endDateValue > 0) {
+    return endDateValue;
   }
-  const dateValue = toDateValue(item && item.date);
-  return dateValue >= todayUtcDateValue ? RELEASE_MODE_UPCOMING : RELEASE_MODE_PAST;
+  return toDateValue(item && item.date);
+}
+
+function getReleaseTemporalMode(item, todayUtcDateValue = getTodayUtcDateValue()) {
+  const dateValue = getReleaseBoundaryDateValue(item);
+  if (dateValue > 0) {
+    return dateValue >= todayUtcDateValue ? RELEASE_MODE_UPCOMING : RELEASE_MODE_PAST;
+  }
+  return RELEASE_MODE_PAST;
 }
 
 function getReleaseKey(item) {

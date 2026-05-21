@@ -20,7 +20,6 @@
       "Filip Dobrocký, Hynek Čejka, Bedřiška Ponížilová"
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Listen",
@@ -28,7 +27,8 @@
         "platform": "bandcamp"
       },
       "secondary": []
-    }
+    },
+    "cv":false
   },
   {
     "date": "2026-07-10",
@@ -47,7 +47,6 @@
     "country": "Czech Republic",
     "collaborators": [],
     "context": "",
-    "status": "upcoming",
     "links": {
       "primary": {
         "label": "Event",
@@ -79,9 +78,31 @@
     "country": "Germany",
     "collaborators": [],
     "context": "",
-    "status": "upcoming",
     "links": {
       "primary": null,
+      "secondary": []
+    },
+    "cv":false
+  },
+  {
+    "date": "2026-05-22",
+    "dateEnd": null,
+    "title": "Ladienie mesta (Tuning the city)",
+    "event": "Ladienie mesta",
+    "type": "performance",
+    "format": "sonic intervention",
+    "artistRoles": [
+      "interpreter"
+    ],
+    "venue": "Trenčín",
+    "city": "Trenčín",
+    "country": "Slovakia",
+        "links": {
+      "primary": {
+        "label": "Event",
+        "url": "https://www.trencin2026.eu/podujatie/ladenie-mesta/",
+        "platform": "facebook"
+      },
       "secondary": []
     }
   },
@@ -105,7 +126,6 @@
       "Shu Chon"
     ],
     "context": "",
-    "status": "upcoming",
     "links": {
       "primary": {
         "label": "Event",
@@ -130,7 +150,6 @@
     "country": "Czech Republic",
     "collaborators": [],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Portfolio",
@@ -159,7 +178,6 @@
       "Damián Říčan"
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": null,
       "secondary": []
@@ -182,11 +200,11 @@
     "country": "Czech Republic",
     "collaborators": [],
     "context": "",
-    "status": "past",
     "links": {
       "primary": null,
       "secondary": []
-    }
+    },
+    "cv":false
   },
   {
     "date": "2026-04-06",
@@ -210,7 +228,6 @@
       }
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Event",
@@ -233,7 +250,6 @@
     "country": "",
     "collaborators": [],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Listen",
@@ -241,7 +257,8 @@
         "platform": "tidal"
       },
       "secondary": []
-    }
+    },
+    "cv":false
   },
   {
     "date": "2026-03-14",
@@ -261,7 +278,6 @@
       }
     ],
     "context": "Program for the exhibition opening of Jana Zikuška.",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Documentation",
@@ -269,7 +285,8 @@
         "platform": "instagram"
       },
       "secondary": []
-    }
+    },
+    "cv":false
   },
   {
     "date": "2026-01-31",
@@ -293,7 +310,6 @@
       }
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Event",
@@ -323,7 +339,6 @@
     "context": "Dynamic collective setting.",
     "cvAuthorRole": "performer",
     "cv": false,
-    "status": "past",
     "links": {
       "primary": {
         "label": "Event",
@@ -368,7 +383,6 @@
     "context": "",
     "cvAuthorRole": "collaborator",
     "cv": false,
-    "status": "past",
     "links": {
       "primary": null,
       "secondary": []
@@ -394,7 +408,6 @@
     "country": "Czech Republic",
     "collaborators": [],
     "context": "Benefit event for Palestine.",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Documentation",
@@ -428,7 +441,6 @@
     "context": "Accompaniment to a poem.",
     "cvAuthorRole": "accompaniment",
     "cv": false,
-    "status": "past",
     "links": {
       "primary": null,
       "secondary": []
@@ -462,7 +474,6 @@
       }
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Portfolio",
@@ -493,7 +504,6 @@
       }
     ],
     "context": "Part of a collective composition.",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Portfolio",
@@ -531,7 +541,6 @@
       }
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Event",
@@ -559,7 +568,6 @@
     "country": "Slovakia",
     "collaborators": [],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Event",
@@ -590,7 +598,6 @@
       }
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Documentation",
@@ -622,7 +629,6 @@
       }
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Documentation",
@@ -649,7 +655,6 @@
     "country": "Germany",
     "collaborators": [],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Documentation",
@@ -680,7 +685,6 @@
       }
     ],
     "context": "Student works concert.",
-    "status": "past",
     "links": {
       "primary": null,
       "secondary": []
@@ -706,7 +710,6 @@
       "DZKZNS, Vojtěch Škuta, Kristína Zubáková"
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": null,
       "secondary": []
@@ -732,7 +735,6 @@
       "DZKZNS, Vojtěch Škuta"
     ],
     "context": "OUTPUT113/115 collective / student events.",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Documentation",
@@ -764,7 +766,6 @@
       }
     ],
     "context": "",
-    "status": "past",
     "links": {
       "primary": {
         "label": "Event",
@@ -772,6 +773,7 @@
         "platform": "facebook"
       },
       "secondary": []
-    }
+    },
+    "cv":false
   }
 ]
