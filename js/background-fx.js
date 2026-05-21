@@ -84,12 +84,21 @@ export function initBackgroundFx({
   let coarseCaptureEl = null;
   let touchScrollLockActive = false;
   let previousBodyTouchAction = "";
-  let phoneFxTouchActive = false;
-  let phoneFxTouchPointerId = null;
-  let phoneFxTouchWords = [];
-  let phoneFxStartedAt = 0;
-  let phoneFxStartX = 0;
-  let phoneFxStartY = 0;
+  let phoneFxActive = false;
+  let phoneFxPointerId = null;
+  let phoneFxCaptureEl = null;
+  const phoneFxMarks = [];
+  const phoneFxTrace = [];
+  let phoneFxTouchIdentifier = null;
+  let lastPhoneFxMarkX = null;
+  let lastPhoneFxMarkY = null;
+  let phoneFxLastX = 0;
+  let phoneFxLastY = 0;
+  let phoneFxLastScrollX = window.scrollX || 0;
+  let phoneFxLastScrollY = window.scrollY || 0;
+  let lastPhoneFxTapAt = -Infinity;
+  let lastPhoneFxTapX = 0;
+  let lastPhoneFxTapY = 0;
   let lastAccentX = null;
   let lastAccentY = null;
   let lastAccentEmitAt = -Infinity;
@@ -186,14 +195,7 @@ export function initBackgroundFx({
   }
 
   function isPhoneFxMode() {
-    const smallViewport = window.innerWidth <= 720;
-    if (!smallViewport) {
-      return false;
-    }
-    const touchCapable = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
-    const coarseMedia = typeof window.matchMedia === "function"
-      && (window.matchMedia("(hover: none)").matches || window.matchMedia("(any-pointer: coarse)").matches);
-    return isCoarsePointer || touchCapable || coarseMedia;
+    return window.innerWidth <= 720;
   }
 
   function isInteractiveTarget(target) {
@@ -448,7 +450,7 @@ export function initBackgroundFx({
       return;
     }
 
-    if (leftMouseHeld && !phoneFxTouchActive) {
+    if (leftMouseHeld) {
       if (!wordSessionActive) {
         startWordSession();
       }
@@ -539,7 +541,6 @@ export function initBackgroundFx({
     lockedConnections.length = 0;
     pendingTrace = [];
     pairStartAnchor = null;
-    phoneFxTouchWords = [];
     lastAccentX = null;
     lastAccentY = null;
     lastAccentEmitAt = -Infinity;
@@ -563,49 +564,170 @@ export function initBackgroundFx({
     clearAllGameVisuals();
   }
 
-  function convertPhoneWordsToDots() {
-    for (let i = 0; i < lockedConnections.length; i += 1) {
-      const connection = lockedConnections[i];
-      const anchors = [connection.a, connection.b];
-      for (let j = 0; j < anchors.length; j += 1) {
-        if (anchors[j].word || anchors[j].hiddenWord) {
-          anchors[j].hiddenWord = anchors[j].word || anchors[j].hiddenWord;
-          anchors[j].isWord = false;
-          anchors[j].word = null;
-        }
-      }
-    }
+  function clearPhoneFxMarks() {
+    phoneFxMarks.length = 0;
+    lastPhoneFxMarkX = null;
+    lastPhoneFxMarkY = null;
+  }
 
-    if (pairStartAnchor && (pairStartAnchor.word || pairStartAnchor.hiddenWord)) {
-      pairStartAnchor.hiddenWord = pairStartAnchor.word || pairStartAnchor.hiddenWord;
-      pairStartAnchor.isWord = false;
-      pairStartAnchor.word = null;
+  function appendPhoneFxTracePoint(x, y, ts, force = false) {
+    const spacingPx = settings.coarseTraceSampleSpacingPx;
+    if (phoneFxTrace.length === 0) {
+      phoneFxTrace.push({ x, y, generatedAt: ts, size: settings.baseDotSize });
+      return;
     }
-
-    for (let i = 0; i < phoneFxTouchWords.length; i += 1) {
-      const wordPoint = phoneFxTouchWords[i];
-      if (wordPoint && (wordPoint.word || wordPoint.hiddenWord)) {
-        wordPoint.hiddenWord = wordPoint.word || wordPoint.hiddenWord;
-        wordPoint.word = null;
+    const lastPoint = phoneFxTrace[phoneFxTrace.length - 1];
+    if (force || distSq(x, y, lastPoint.x, lastPoint.y) >= spacingPx * spacingPx) {
+      phoneFxTrace.push({ x, y, generatedAt: ts, size: settings.baseDotSize });
+      if (phoneFxTrace.length > settings.maxPoints) {
+        phoneFxTrace.splice(0, phoneFxTrace.length - settings.maxPoints);
       }
     }
   }
 
-  function restorePhoneDotsToWords() {
-    for (let i = 0; i < lockedConnections.length; i += 1) {
-      const connection = lockedConnections[i];
-      const anchors = [connection.a, connection.b];
-      for (let j = 0; j < anchors.length; j += 1) {
-        if (anchors[j].hiddenWord) {
-          anchors[j].isWord = true;
-          anchors[j].word = anchors[j].hiddenWord;
-        }
-      }
+  function updatePhoneFxPosition(x, y, ts) {
+    if (!phoneFxActive) {
+      phoneFxActive = true;
+      phoneFxPointerId = null;
+      phoneFxTouchIdentifier = null;
+      clearPhoneFxMarks();
+      phoneFxTrace.length = 0;
+      pendingTrace = [];
+      pairStartAnchor = null;
+      miniModeActive = true;
+    }
+    phoneFxLastX = x;
+    phoneFxLastY = y;
+    pointer.x = x;
+    pointer.y = y;
+    pointer.targetX = x;
+    pointer.targetY = y;
+    pointer.active = true;
+    appendPhoneFxTracePoint(x, y, ts);
+    if (pairStartAnchor) {
+      appendPendingTracePoint(x, y, ts, true, settings.coarseTraceSampleSpacingPx);
+    }
+    emitPhoneFxMark(x, y, ts);
+  }
+
+  function clearPhoneFxTrace() {
+    clearPhoneFxMarks();
+    phoneFxTrace.length = 0;
+    lockedConnections.length = 0;
+    pendingTrace = [];
+    pairStartAnchor = null;
+  }
+
+  function isPhoneFxDoubleTap(x, y, ts) {
+    const doubleTapDistanceSq = settings.coarseDoubleTapDistancePx * settings.coarseDoubleTapDistancePx;
+    return ts - lastPhoneFxTapAt <= settings.coarseDoubleTapWindowMs
+      && distSq(x, y, lastPhoneFxTapX, lastPhoneFxTapY) <= doubleTapDistanceSq;
+  }
+
+  function rememberPhoneFxTap(x, y, ts) {
+    lastPhoneFxTapAt = ts;
+    lastPhoneFxTapX = x;
+    lastPhoneFxTapY = y;
+  }
+
+  function emitPhoneFxMark(x, y, ts, force = false) {
+    if ((!wordPool || wordPool.length === 0) && wordSourceSelector) {
+      loadWordPoolFromDom();
+    }
+    if (!wordPool || wordPool.length === 0) {
+      return false;
     }
 
-    if (pairStartAnchor && pairStartAnchor.hiddenWord) {
-      pairStartAnchor.isWord = true;
-      pairStartAnchor.word = pairStartAnchor.hiddenWord;
+    const accentInfo = sampleMaskAt(x, y);
+    if (!accentInfo.hit) {
+      return false;
+    }
+
+    const spacingSq = settings.wordMinSpacing * settings.wordMinSpacing;
+    if (
+      !force &&
+      lastPhoneFxMarkX !== null &&
+      lastPhoneFxMarkY !== null &&
+      distSq(x, y, lastPhoneFxMarkX, lastPhoneFxMarkY) < spacingSq
+    ) {
+      return false;
+    }
+
+    const word = pickWord();
+    if (!word) {
+      return false;
+    }
+
+    const size = settings.baseDotSize + settings.accentMaxExtraSize * accentInfo.strength;
+    phoneFxMarks.push({
+      x,
+      y,
+      size,
+      word,
+      generatedAt: ts
+    });
+    if (phoneFxMarks.length > settings.maxPoints) {
+      phoneFxMarks.splice(0, phoneFxMarks.length - settings.maxPoints);
+    }
+    lastPhoneFxMarkX = x;
+    lastPhoneFxMarkY = y;
+
+    if (!pairStartAnchor) {
+      pendingTrace = [{ x, y, generatedAt: ts, size: settings.baseDotSize }];
+    } else {
+      appendPendingTracePoint(x, y, ts, true, settings.coarseTraceSampleSpacingPx);
+    }
+    registerPairAnchor({
+      x,
+      y,
+      size,
+      generatedAt: ts,
+      isSecretZone: secretZoneActive,
+      isWord: false,
+      word: null,
+      phoneWord: word
+    }, ts);
+
+    if (!secretZoneActive) {
+      playPluck(size, {
+        min: settings.baseDotSize,
+        max: settings.baseDotSize + settings.accentMaxExtraSize
+      });
+    }
+
+    return true;
+  }
+
+  function renderPhoneFxMarks() {
+    if (phoneFxTrace.length > 1) {
+      renderTraceAsTrail(phoneFxTrace, performance.now());
+    }
+
+    if (phoneFxMarks.length === 0) {
+      return;
+    }
+
+    for (let i = 0; i < phoneFxMarks.length; i += 1) {
+      const mark = phoneFxMarks[i];
+      if (phoneFxActive) {
+        const fontSize = Math.max(12, mark.size * 3.4);
+        ctx.font = `600 ${Math.round(fontSize)}px ${wordFont || "serif"}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = rgba(ACCENT_COLOR, 0.96);
+        ctx.fillText(mark.word, mark.x, mark.y);
+      } else {
+        const radius = Math.max(2.8, mark.size);
+        ctx.fillStyle = rgba(ACCENT_COLOR, 0.28);
+        ctx.beginPath();
+        ctx.arc(mark.x, mark.y, radius + 2.1, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = rgba(ACCENT_COLOR, 1);
+        ctx.beginPath();
+        ctx.arc(mark.x, mark.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 
@@ -947,9 +1069,6 @@ export function initBackgroundFx({
       word,
       hiddenWord: word
     });
-    if (phoneFxTouchActive) {
-      phoneFxTouchWords.push(point);
-    }
     if (miniModeActive && wordSessionActive) {
       registerPairAnchor({
         x,
@@ -1024,6 +1143,10 @@ export function initBackgroundFx({
       renderTraceAsTrail(pendingTrace, ts);
     }
 
+    if (isPhoneFxMode()) {
+      renderPhoneFxMarks();
+    }
+
     for (let i = 1; i < trail.length; i += 1) {
       const prev = trail[i - 1];
       const curr = trail[i];
@@ -1072,13 +1195,16 @@ export function initBackgroundFx({
       const anchors = [connection.a, connection.b];
       for (let j = 0; j < anchors.length; j += 1) {
         const anchor = anchors[j];
-        if (anchor.isWord && anchor.word) {
+        const anchorWord = phoneFxActive && anchor.phoneWord
+          ? anchor.phoneWord
+          : (anchor.isWord && anchor.word ? anchor.word : "");
+        if (anchorWord) {
           const fontSize = Math.max(12, anchor.size * (3.3 + pulse * 0.45));
           ctx.font = `600 ${Math.round(fontSize)}px ${wordFont || "serif"}`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = rgba(ACCENT_COLOR, 0.94);
-          ctx.fillText(anchor.word, anchor.x, anchor.y);
+          ctx.fillText(anchorWord, anchor.x, anchor.y);
           continue;
         }
 
@@ -1096,13 +1222,16 @@ export function initBackgroundFx({
     }
 
     if (pairStartAnchor) {
-      if (pairStartAnchor.isWord && pairStartAnchor.word) {
+      const pairStartWord = phoneFxActive && pairStartAnchor.phoneWord
+        ? pairStartAnchor.phoneWord
+        : (pairStartAnchor.isWord && pairStartAnchor.word ? pairStartAnchor.word : "");
+      if (pairStartWord) {
         const fontSize = Math.max(12, pairStartAnchor.size * 3.4);
         ctx.font = `600 ${Math.round(fontSize)}px ${wordFont || "serif"}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = rgba(ACCENT_COLOR, 0.96);
-        ctx.fillText(pairStartAnchor.word, pairStartAnchor.x, pairStartAnchor.y);
+        ctx.fillText(pairStartWord, pairStartAnchor.x, pairStartAnchor.y);
       } else {
         const radius = Math.max(2.8, pairStartAnchor.size);
         ctx.fillStyle = rgba(ACCENT_COLOR, 1);
@@ -1120,7 +1249,7 @@ export function initBackgroundFx({
   function tick(ts) {
     pointer.x += (pointer.targetX - pointer.x) * settings.smoothness;
     pointer.y += (pointer.targetY - pointer.y) * settings.smoothness;
-    if (!gameStopped && !coarseStrokeActive && !phoneFxTouchActive) {
+    if (!gameStopped && !coarseStrokeActive) {
       appendPendingTracePoint(pointer.x, pointer.y, ts);
     }
 
@@ -1134,13 +1263,11 @@ export function initBackgroundFx({
     const shouldEmit = !gameStopped
       && zoneEnabled
       && pointer.active
+      && !isPhoneFxMode()
       && (emitDistSq > spacing * spacing || ts - lastEmitAt > idleEmitMs);
 
     if (shouldEmit) {
-      const phoneWordTouch = phoneFxTouchActive && isPhoneFxMode();
-      const accentInfo = phoneWordTouch
-        ? { hit: true, strength: 0.72 }
-        : sampleMaskAt(pointer.x, pointer.y);
+      const accentInfo = sampleMaskAt(pointer.x, pointer.y);
       const accentSize = settings.baseDotSize + settings.accentMaxExtraSize * accentInfo.strength;
       const accentSpacingSq = settings.accentMinSpacing * settings.accentMinSpacing;
       const accentCooldownReady = ts - lastAccentEmitAt >= settings.accentCooldownMs;
@@ -1198,7 +1325,244 @@ export function initBackgroundFx({
     window.requestAnimationFrame(tick);
   }
 
+  function handlePhoneFxPointerDown(ev) {
+    if (!isPhoneFxMode()) {
+      return false;
+    }
+    const isMouse = ev.pointerType === "mouse";
+    const isLeft = !isMouse || ev.button === 0;
+    if (!isLeft || gameStopped) {
+      return false;
+    }
+
+    const target = ev.target instanceof Element
+      ? ev.target
+      : document.elementFromPoint(ev.clientX, ev.clientY);
+    if (!isPhoneFxTouchZone(ev.clientX, ev.clientY, target)) {
+      return false;
+    }
+
+    const now = performance.now();
+    if (isPhoneFxDoubleTap(ev.clientX, ev.clientY, now)) {
+      clearPhoneFxTrace();
+      lastPhoneFxTapAt = -Infinity;
+      phoneFxActive = false;
+      phoneFxPointerId = null;
+      return true;
+    }
+    rememberPhoneFxTap(ev.clientX, ev.clientY, now);
+
+    phoneFxActive = true;
+    phoneFxPointerId = ev.pointerId;
+    phoneFxTouchIdentifier = null;
+    clearPhoneFxMarks();
+    phoneFxTrace.length = 0;
+    phoneFxLastX = ev.clientX;
+    phoneFxLastY = ev.clientY;
+    phoneFxLastScrollX = window.scrollX || 0;
+    phoneFxLastScrollY = window.scrollY || 0;
+    pendingTrace = [];
+    pairStartAnchor = null;
+    pointer.x = ev.clientX;
+    pointer.y = ev.clientY;
+    pointer.targetX = ev.clientX;
+    pointer.targetY = ev.clientY;
+    pointer.active = true;
+    miniModeActive = true;
+    secretZoneActive = isPointInsideElement(ev.clientX, ev.clientY, secretVideoBlock);
+    emitPhoneFxMark(ev.clientX, ev.clientY, now, true);
+
+    syncFxCursorHintState();
+    return true;
+  }
+
+  function getPhoneTouchFromList(touches) {
+    if (!touches || touches.length === 0) {
+      return null;
+    }
+    if (phoneFxTouchIdentifier !== null) {
+      for (let i = 0; i < touches.length; i += 1) {
+        if (touches[i].identifier === phoneFxTouchIdentifier) {
+          return touches[i];
+        }
+      }
+    }
+    return touches[0];
+  }
+
+  function getPhoneTouch(event, includeChanged = false) {
+    return getPhoneTouchFromList(event.touches)
+      || (includeChanged ? getPhoneTouchFromList(event.changedTouches) : null);
+  }
+
+  function handlePhoneFxTouchStart(event) {
+    if (!isPhoneFxMode() || gameStopped) {
+      return false;
+    }
+    const touch = getPhoneTouch(event, true);
+    if (!touch) {
+      return false;
+    }
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!isPhoneFxTouchZone(touch.clientX, touch.clientY, target)) {
+      return false;
+    }
+
+    const now = performance.now();
+    if (isPhoneFxDoubleTap(touch.clientX, touch.clientY, now)) {
+      clearPhoneFxTrace();
+      lastPhoneFxTapAt = -Infinity;
+      phoneFxActive = false;
+      phoneFxPointerId = null;
+      phoneFxTouchIdentifier = null;
+      return true;
+    }
+    rememberPhoneFxTap(touch.clientX, touch.clientY, now);
+
+    phoneFxActive = true;
+    phoneFxPointerId = null;
+    phoneFxTouchIdentifier = touch.identifier;
+    phoneFxCaptureEl = null;
+    clearPhoneFxMarks();
+    phoneFxTrace.length = 0;
+    phoneFxLastX = touch.clientX;
+    phoneFxLastY = touch.clientY;
+    phoneFxLastScrollX = window.scrollX || 0;
+    phoneFxLastScrollY = window.scrollY || 0;
+    pendingTrace = [];
+    pairStartAnchor = null;
+    pointer.x = touch.clientX;
+    pointer.y = touch.clientY;
+    pointer.targetX = touch.clientX;
+    pointer.targetY = touch.clientY;
+    pointer.active = true;
+    miniModeActive = true;
+    secretZoneActive = isPointInsideElement(touch.clientX, touch.clientY, secretVideoBlock);
+    emitPhoneFxMark(touch.clientX, touch.clientY, now, true);
+    syncFxCursorHintState();
+    return true;
+  }
+
+  function handlePhoneFxTouchMove(event) {
+    if (!isPhoneFxMode()) {
+      return false;
+    }
+    const touch = getPhoneTouch(event);
+    if (!touch) {
+      return true;
+    }
+    if (phoneFxTouchIdentifier === null) {
+      phoneFxTouchIdentifier = touch.identifier;
+    }
+    updatePhoneFxPosition(touch.clientX, touch.clientY, performance.now());
+    return true;
+  }
+
+  function handlePhoneFxTouchEnd(event) {
+    if (!isPhoneFxMode()) {
+      return false;
+    }
+    if (!phoneFxActive) {
+      return true;
+    }
+    const touch = getPhoneTouch(event, true);
+    if (touch && phoneFxTouchIdentifier !== null && touch.identifier !== phoneFxTouchIdentifier) {
+      return true;
+    }
+    phoneFxActive = false;
+    phoneFxPointerId = null;
+    phoneFxTouchIdentifier = null;
+    pairStartAnchor = null;
+    pendingTrace = [];
+    syncFxCursorHintState();
+    return true;
+  }
+
+  function handlePhoneFxPointerMove(ev) {
+    if (!isPhoneFxMode()) {
+      return false;
+    }
+    if (!phoneFxActive || ev.pointerId !== phoneFxPointerId) {
+      return true;
+    }
+
+    const samples = typeof ev.getCoalescedEvents === "function"
+      ? ev.getCoalescedEvents()
+      : null;
+    const points = samples && samples.length ? samples : [ev];
+    const now = performance.now();
+    for (let i = 0; i < points.length; i += 1) {
+      const point = points[i];
+      updatePhoneFxPosition(point.clientX, point.clientY, now);
+    }
+
+    return true;
+  }
+
+  function releasePhoneFxCapture(pointerId) {
+    if (
+      phoneFxCaptureEl &&
+      typeof phoneFxCaptureEl.releasePointerCapture === "function" &&
+      typeof phoneFxCaptureEl.hasPointerCapture === "function"
+    ) {
+      try {
+        if (phoneFxCaptureEl.hasPointerCapture(pointerId)) {
+          phoneFxCaptureEl.releasePointerCapture(pointerId);
+        }
+      } catch {
+        // Ignore capture release failures.
+      }
+    }
+    phoneFxCaptureEl = null;
+  }
+
+  function handlePhoneFxPointerUp(ev) {
+    if (!isPhoneFxMode()) {
+      return false;
+    }
+    if (!phoneFxActive || ev.pointerId !== phoneFxPointerId) {
+      return true;
+    }
+
+    phoneFxActive = false;
+    phoneFxPointerId = null;
+    pairStartAnchor = null;
+    pendingTrace = [];
+    syncFxCursorHintState();
+    return true;
+  }
+
+  function handlePhoneFxScroll() {
+    if (!isPhoneFxMode() || !phoneFxActive) {
+      phoneFxLastScrollX = window.scrollX || 0;
+      phoneFxLastScrollY = window.scrollY || 0;
+      return;
+    }
+
+    const nextScrollX = window.scrollX || 0;
+    const nextScrollY = window.scrollY || 0;
+    const dx = nextScrollX - phoneFxLastScrollX;
+    const dy = nextScrollY - phoneFxLastScrollY;
+    phoneFxLastScrollX = nextScrollX;
+    phoneFxLastScrollY = nextScrollY;
+    if (dx === 0 && dy === 0) {
+      return;
+    }
+
+    const nextX = phoneFxLastX - dx;
+    const nextY = phoneFxLastY - dy;
+    updatePhoneFxPosition(
+      Math.max(0, Math.min(w, nextX)),
+      Math.max(0, Math.min(h, nextY)),
+      performance.now()
+    );
+  }
+
   function onPointerMove(ev) {
+    if (handlePhoneFxPointerMove(ev)) {
+      return;
+    }
+
     const now = performance.now();
     const moveDx = ev.clientX - lastInputX;
     const moveDy = ev.clientY - lastInputY;
@@ -1255,23 +1619,13 @@ export function initBackgroundFx({
       ev.preventDefault();
     }
 
-    if (phoneFxTouchActive && ev.pointerId === phoneFxTouchPointerId) {
-      pointer.x = ev.clientX;
-      pointer.y = ev.clientY;
-      pointer.targetX = ev.clientX;
-      pointer.targetY = ev.clientY;
-      appendPendingTracePoint(
-        ev.clientX,
-        ev.clientY,
-        now,
-        true,
-        settings.coarseTraceSampleSpacingPx
-      );
-      ev.preventDefault();
-    }
   }
 
   function onPointerDown(ev) {
+    if (handlePhoneFxPointerDown(ev)) {
+      return;
+    }
+
     const now = performance.now();
     const isMouse = ev.pointerType === "mouse";
     const isLeft = !isMouse || ev.button === 0;
@@ -1281,42 +1635,6 @@ export function initBackgroundFx({
     const downTarget = ev.target instanceof Element
       ? ev.target
       : document.elementFromPoint(ev.clientX, ev.clientY);
-    if (
-      isMobileStrokeInput(ev)
-      && isLeft
-      && isPhoneFxTouchZone(ev.clientX, ev.clientY, downTarget)
-      && !gameStopped
-    ) {
-      coarseTapStart = null;
-      coarseStrokeActive = false;
-      phoneFxTouchActive = true;
-      phoneFxTouchPointerId = ev.pointerId;
-      phoneFxTouchWords = [];
-      phoneFxStartedAt = now;
-      phoneFxStartX = ev.clientX;
-      phoneFxStartY = ev.clientY;
-      lastWordX = null;
-      lastWordY = null;
-      lastAccentX = null;
-      lastAccentY = null;
-      restorePhoneDotsToWords();
-      setMiniModeActive(true);
-      wordSessionActive = true;
-      setWordsActive(true);
-      onPointerMove(ev);
-      const captureTarget = ev.target instanceof Element ? ev.target : canvas;
-      if (captureTarget && typeof captureTarget.setPointerCapture === "function") {
-        try {
-          captureTarget.setPointerCapture(ev.pointerId);
-          coarseCaptureEl = captureTarget;
-        } catch {
-          coarseCaptureEl = null;
-        }
-      }
-      setTouchScrollLock(true);
-      ev.preventDefault();
-      return;
-    }
 
     onPointerMove(ev);
     if (isMobileStrokeInput(ev) && isLeft) {
@@ -1366,62 +1684,13 @@ export function initBackgroundFx({
   }
 
   function onPointerUp(ev) {
+    if (handlePhoneFxPointerUp(ev)) {
+      return;
+    }
+
     const now = performance.now();
     const isMouse = ev.pointerType === "mouse";
     const isLeft = !isMouse || ev.button === 0;
-
-    if (phoneFxTouchActive && isLeft && ev.pointerId === phoneFxTouchPointerId) {
-      const tapDurationMs = now - phoneFxStartedAt;
-      const moveToleranceSq = settings.coarseTapMoveTolerancePx * settings.coarseTapMoveTolerancePx;
-      const travelSq = distSq(ev.clientX, ev.clientY, phoneFxStartX, phoneFxStartY);
-      const moved = travelSq > moveToleranceSq;
-      const isTap = !moved && tapDurationMs <= settings.coarseTapMaxDurationMs;
-      const doubleTapDistanceSq = settings.coarseDoubleTapDistancePx * settings.coarseDoubleTapDistancePx;
-      const isDoubleTap = isTap
-        && now - lastCoarseTapAt <= settings.coarseDoubleTapWindowMs
-        && distSq(ev.clientX, ev.clientY, lastCoarseTapX, lastCoarseTapY) <= doubleTapDistanceSq;
-
-      if (isDoubleTap) {
-        clearAllGameVisuals();
-        lastCoarseTapAt = -Infinity;
-      } else {
-        convertPhoneWordsToDots();
-        if (isTap) {
-          lastCoarseTapAt = now;
-          lastCoarseTapX = ev.clientX;
-          lastCoarseTapY = ev.clientY;
-        } else {
-          lastCoarseTapAt = -Infinity;
-        }
-      }
-
-      phoneFxTouchActive = false;
-      phoneFxTouchPointerId = null;
-      phoneFxTouchWords = [];
-      phoneFxStartedAt = 0;
-      coarseStrokeActive = false;
-      coarseTapStart = null;
-      if (
-        coarseCaptureEl
-        && typeof coarseCaptureEl.releasePointerCapture === "function"
-        && typeof coarseCaptureEl.hasPointerCapture === "function"
-      ) {
-        try {
-          if (coarseCaptureEl.hasPointerCapture(ev.pointerId)) {
-            coarseCaptureEl.releasePointerCapture(ev.pointerId);
-          }
-        } catch {
-          // Ignore capture release failures.
-        }
-      }
-      coarseCaptureEl = null;
-      leftMouseHeld = false;
-      wordSessionActive = false;
-      setWordsActive(false);
-      setTouchScrollLock(false);
-      ev.preventDefault();
-      return;
-    }
 
     if (isMobileStrokeInput(ev) && isLeft && coarseTapStart && ev.pointerId === coarseTapStart.pointerId) {
       const tapDurationMs = now - coarseTapStart.startedAt;
@@ -1480,13 +1749,18 @@ export function initBackgroundFx({
 
   function onPointerLeave(ev) {
     const forced = Boolean(ev && ev.type === "blur");
-    if ((coarseStrokeActive || phoneFxTouchActive) && !forced) {
-      return;
+    if (phoneFxActive) {
+      if (!forced) {
+        return;
+      }
+      releasePhoneFxCapture(phoneFxPointerId);
+      phoneFxActive = false;
+      phoneFxPointerId = null;
+      phoneFxTouchIdentifier = null;
+      setTouchScrollLock(false);
     }
-    const wasPhoneFxTouchActive = phoneFxTouchActive;
-    if (wasPhoneFxTouchActive) {
-      convertPhoneWordsToDots();
-      wordSessionActive = false;
+    if (coarseStrokeActive && !forced) {
+      return;
     }
     pointer.active = false;
     secretZoneActive = false;
@@ -1494,14 +1768,8 @@ export function initBackgroundFx({
     coarseStrokeActive = false;
     coarseTapStart = null;
     coarseCaptureEl = null;
-    phoneFxTouchActive = false;
-    phoneFxTouchPointerId = null;
-    phoneFxTouchWords = [];
-    phoneFxStartedAt = 0;
     setTouchScrollLock(false);
-    if (!wasPhoneFxTouchActive) {
-      endWordSession();
-    }
+    endWordSession();
     setMiniModeActive(false);
     setWordsActive(false);
     syncFxCursorHintState();
@@ -1513,6 +1781,15 @@ export function initBackgroundFx({
   window.addEventListener("pointerdown", onPointerDown, { passive: false });
   window.addEventListener("pointerup", onPointerUp, { passive: false });
   window.addEventListener("pointercancel", onPointerUp, { passive: false });
+  window.addEventListener("touchstart", handlePhoneFxTouchStart, { passive: true });
+  window.addEventListener("touchmove", handlePhoneFxTouchMove, { passive: true });
+  window.addEventListener("touchend", handlePhoneFxTouchEnd, { passive: true });
+  window.addEventListener("touchcancel", handlePhoneFxTouchEnd, { passive: true });
+  document.addEventListener("touchstart", handlePhoneFxTouchStart, { passive: true, capture: true });
+  document.addEventListener("touchmove", handlePhoneFxTouchMove, { passive: true, capture: true });
+  document.addEventListener("touchend", handlePhoneFxTouchEnd, { passive: true, capture: true });
+  document.addEventListener("touchcancel", handlePhoneFxTouchEnd, { passive: true, capture: true });
+  window.addEventListener("scroll", handlePhoneFxScroll, { passive: true });
   window.addEventListener("pointerleave", onPointerLeave);
   window.addEventListener("blur", onPointerLeave);
   if (coarsePointerQuery && typeof coarsePointerQuery.addEventListener === "function") {
@@ -1522,10 +1799,11 @@ export function initBackgroundFx({
       coarseTapStart = null;
       lastCoarseTapAt = -Infinity;
       coarseCaptureEl = null;
-      phoneFxTouchActive = false;
-      phoneFxTouchPointerId = null;
-      phoneFxTouchWords = [];
-      phoneFxStartedAt = 0;
+      phoneFxActive = false;
+      phoneFxPointerId = null;
+      phoneFxTouchIdentifier = null;
+      phoneFxCaptureEl = null;
+      lastPhoneFxTapAt = -Infinity;
       setTouchScrollLock(false);
     });
   }
