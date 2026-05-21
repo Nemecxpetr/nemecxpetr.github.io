@@ -474,13 +474,13 @@ body.fx-click-hint .wrap {
 }
 
 .work.release.release-has-roles {
-  border-color: color-mix(in srgb, var(--release-role-color) 58%, var(--hairline));
+  border-color: color-mix(in srgb, var(--release-role-color) 68%, var(--hairline));
 }
 
 .work.release.release-has-roles .work-meta {
   background: linear-gradient(
       90deg,
-      color-mix(in srgb, var(--release-role-color) 10%, transparent),
+      color-mix(in srgb, var(--release-role-color) 15%, transparent),
       transparent 34%
     ),
     linear-gradient(
@@ -519,7 +519,7 @@ body.fx-click-hint .wrap {
   .work.release.release-has-roles .work-meta {
     background: linear-gradient(
         90deg,
-        color-mix(in srgb, var(--release-role-color) 14%, transparent),
+        color-mix(in srgb, var(--release-role-color) 20%, transparent),
         transparent 34%
       ),
       linear-gradient(
