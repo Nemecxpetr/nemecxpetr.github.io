@@ -87,6 +87,9 @@ export function initBackgroundFx({
   let phoneFxTouchActive = false;
   let phoneFxTouchPointerId = null;
   let phoneFxTouchWords = [];
+  let phoneFxStartedAt = 0;
+  let phoneFxStartX = 0;
+  let phoneFxStartY = 0;
   let lastAccentX = null;
   let lastAccentY = null;
   let lastAccentEmitAt = -Infinity;
@@ -1091,7 +1094,7 @@ export function initBackgroundFx({
   function tick(ts) {
     pointer.x += (pointer.targetX - pointer.x) * settings.smoothness;
     pointer.y += (pointer.targetY - pointer.y) * settings.smoothness;
-    if (!gameStopped && !coarseStrokeActive) {
+    if (!gameStopped && !coarseStrokeActive && !phoneFxTouchActive) {
       appendPendingTracePoint(pointer.x, pointer.y, ts);
     }
 
@@ -1258,18 +1261,14 @@ export function initBackgroundFx({
       && isPhoneFxTouchZone(ev.clientX, ev.clientY, downTarget)
       && !gameStopped
     ) {
-      coarseTapStart = {
-        pointerId: ev.pointerId,
-        startX: ev.clientX,
-        startY: ev.clientY,
-        startedAt: now,
-        inFxZone: true,
-        moved: false
-      };
+      coarseTapStart = null;
       coarseStrokeActive = false;
       phoneFxTouchActive = true;
       phoneFxTouchPointerId = ev.pointerId;
       phoneFxTouchWords = [];
+      phoneFxStartedAt = now;
+      phoneFxStartX = ev.clientX;
+      phoneFxStartY = ev.clientY;
       lastWordX = null;
       lastWordY = null;
       lastAccentX = null;
@@ -1345,12 +1344,10 @@ export function initBackgroundFx({
     const isLeft = !isMouse || ev.button === 0;
 
     if (phoneFxTouchActive && isLeft && ev.pointerId === phoneFxTouchPointerId) {
-      const tapDurationMs = coarseTapStart ? now - coarseTapStart.startedAt : Infinity;
+      const tapDurationMs = now - phoneFxStartedAt;
       const moveToleranceSq = settings.coarseTapMoveTolerancePx * settings.coarseTapMoveTolerancePx;
-      const travelSq = coarseTapStart
-        ? distSq(ev.clientX, ev.clientY, coarseTapStart.startX, coarseTapStart.startY)
-        : Infinity;
-      const moved = Boolean(coarseTapStart && (coarseTapStart.moved || travelSq > moveToleranceSq));
+      const travelSq = distSq(ev.clientX, ev.clientY, phoneFxStartX, phoneFxStartY);
+      const moved = travelSq > moveToleranceSq;
       const isTap = !moved && tapDurationMs <= settings.coarseTapMaxDurationMs;
       const doubleTapDistanceSq = settings.coarseDoubleTapDistancePx * settings.coarseDoubleTapDistancePx;
       const isDoubleTap = isTap
@@ -1374,6 +1371,7 @@ export function initBackgroundFx({
       phoneFxTouchActive = false;
       phoneFxTouchPointerId = null;
       phoneFxTouchWords = [];
+      phoneFxStartedAt = 0;
       coarseStrokeActive = false;
       coarseTapStart = null;
       if (
@@ -1472,6 +1470,7 @@ export function initBackgroundFx({
     phoneFxTouchActive = false;
     phoneFxTouchPointerId = null;
     phoneFxTouchWords = [];
+    phoneFxStartedAt = 0;
     setTouchScrollLock(false);
     if (!wasPhoneFxTouchActive) {
       endWordSession();
@@ -1499,6 +1498,7 @@ export function initBackgroundFx({
       phoneFxTouchActive = false;
       phoneFxTouchPointerId = null;
       phoneFxTouchWords = [];
+      phoneFxStartedAt = 0;
       setTouchScrollLock(false);
     });
   }
