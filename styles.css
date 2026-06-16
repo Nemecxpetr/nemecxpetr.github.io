@@ -567,6 +567,18 @@ body[data-release-page="true"] .release-panel .work-meta .work-desc {
   text-justify: auto;
 }
 
+.release-title-translation {
+  margin-top: -2px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.release-abstract {
+  max-width: 74ch;
+  margin-top: 8px;
+  line-height: 1.55;
+}
+
 body[data-release-page="true"].print-mode .release-mode-control,
 body[data-release-page="true"].print-mode .back-actions {
   display: none !important;

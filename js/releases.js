@@ -512,6 +512,12 @@ function formatCollaborators(collaborators) {
 function createReleaseCard(item, options) {
   const opts = options || {};
   const titleText = cleanText(item.title) || cleanText(item.work);
+  const alternateTitleText = [
+    cleanText(item.titleEn),
+    cleanText(item.titleCs),
+    cleanText(item.titleSecondary),
+    cleanText(item.titleAlt)
+  ].find((candidate) => candidate && candidate !== titleText);
   const event = cleanText(item.event);
   const workText = titleText;
   const workHtml = cleanText(item.workHtml);
@@ -521,6 +527,7 @@ function createReleaseCard(item, options) {
   const artistRoles = getArtistRoles(item);
   const collaborators = formatCollaborators(item.collaborators);
   const notes = cleanText(item.context) || cleanText(item.notes);
+  const abstract = cleanText(item.abstract);
   const dateLabel = formatDateRange(item);
   const hasWork = Boolean(workHtml || titleText);
   const todayUtcDateValue = Number.isFinite(opts.todayUtcDateValue)
@@ -567,6 +574,13 @@ function createReleaseCard(item, options) {
   }
   meta.appendChild(title);
 
+  if (alternateTitleText && opts.showAlternateTitle !== false) {
+    const alternateTitle = document.createElement("p");
+    alternateTitle.className = "work-desc release-title-translation";
+    alternateTitle.textContent = alternateTitleText;
+    meta.appendChild(alternateTitle);
+  }
+
   if (opts.showTemporalStatus) {
     const status = document.createElement("p");
     status.className = "release-status";
@@ -607,6 +621,13 @@ function createReleaseCard(item, options) {
     notesLine.className = "work-desc";
     notesLine.textContent = notes;
     meta.appendChild(notesLine);
+  }
+
+  if (abstract && opts.showAbstract === true) {
+    const abstractLine = document.createElement("p");
+    abstractLine.className = "work-desc release-abstract";
+    abstractLine.textContent = abstract;
+    meta.appendChild(abstractLine);
   }
 
   grid.appendChild(meta);
@@ -1009,6 +1030,8 @@ async function loadReleases({
         limit: 3,
         showLinks: false,
         showNotes: false,
+        showAlternateTitle: false,
+        showAbstract: false,
         yearRange: upcomingYearRange,
         tintRange: upcomingTintRange,
         invertTint: true,
@@ -1024,6 +1047,8 @@ async function loadReleases({
       const latestOptions = {
         showLinks: false,
         showNotes: false,
+        showAlternateTitle: false,
+        showAbstract: false,
         yearRange: pastYearRange,
         tintRange: pastTintRange,
         cardHref: buildReleaseFocusHref,
@@ -1043,6 +1068,8 @@ async function loadReleases({
       renderReleases(fullPastReleasesEl, past, {
         showLinks: true,
         showNotes: true,
+        showAlternateTitle: true,
+        showAbstract: true,
         yearRange: pastYearRange,
         tintRange: pastTintRange,
         emptyText: "No past releases yet."
@@ -1052,6 +1079,8 @@ async function loadReleases({
       renderReleases(fullUpcomingReleasesEl, upcoming, {
         showLinks: true,
         showNotes: true,
+        showAlternateTitle: true,
+        showAbstract: true,
         yearRange: upcomingYearRange,
         tintRange: upcomingTintRange,
         invertTint: true,
@@ -1062,6 +1091,8 @@ async function loadReleases({
       renderReleases(allReleasesEl, indexed, {
         showLinks: true,
         showNotes: true,
+        showAlternateTitle: true,
+        showAbstract: true,
         yearRange,
         tintRange
       });
