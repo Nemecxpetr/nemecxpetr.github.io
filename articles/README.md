@@ -1,17 +1,18 @@
-# Hidden Article Page
+# Articles
 
-Unlisted route:
+Main route:
 
-`/listening-notes-7q4m/`
+`/articles/`
 
-No link points here from the public homepage, and the page has `noindex`.
+The route has `noindex`. With no query string it shows the article index graph.
+Individual graph-backed articles use `/articles/?article=<article-key>`.
 
 ## Shared code architecture
 
 This page reuses the global `main.js` bootstrap for background FX.
 
 Page-specific FX settings are passed via `#fx` data attributes in
-`listening-notes-7q4m/index.html`:
+`articles/index.html`:
 
 - `data-wrap-selector=".essay-layout"`
 - `data-active-zone-selector=".article-pane"`
@@ -24,15 +25,27 @@ Left-mouse word mode uses words from the loaded article text.
 
 ## How to edit your current article
 
+Article keys are folder names under `articles/`.
+
+Example:
+
+- key: `czech-scene-sound`
+- article body: `articles/czech-scene-sound/article.html`
+- article map: `articles/czech-scene-sound/map.json`
+- clean route: `/articles/czech-scene-sound/`
+- viewer route: `/articles/?article=czech-scene-sound`
+
+The general `/articles/` page reads `articles/articles.json` and shows a full-page node map of every listed article.
+
 1. Edit map nodes and connections:
-`content/czech-scene-sound.map.json`
+`czech-scene-sound/map.json`
 
 2. Edit article text and structure:
-`content/czech-scene-sound.html`
+`czech-scene-sound/article.html`
 
 ## Required structure
 
-Every node in `.map.json` must reference a section id in `.html`.
+Every node in `map.json` must reference a section id in `article.html`.
 
 Example:
 
@@ -75,7 +88,7 @@ Notes:
 
 Optional node importance levels:
 
-- Add `"importance": <number>` to a node in `.map.json` (`1` is highest).
+- Add `"importance": <number>` to a node in `map.json` (`1` is highest).
 - Levels `1` and `2` are accent blue.
 - Levels `3+` use black/white node colors (theme-dependent) with increasing transparency.
 - Importance also changes node size (higher importance = larger node).
@@ -89,21 +102,22 @@ Selecting a node in the map switches the visible section below.
 
 ## Adding another article later
 
-1. Duplicate template files:
-- `content/article-template.map.json`
-- `content/article-template.html`
+1. Copy the template folder:
+- `articles/_template/`
 
-2. Rename both to the same key, for example:
-- `content/my-next-article.map.json`
-- `content/my-next-article.html`
+2. Rename the copied folder to the new key, for example:
+- `articles/my-next-article/`
 
-3. Open:
-`/listening-notes-7q4m/?article=my-next-article`
+3. Add the article to:
+`articles/articles.json`
+
+4. Open:
+`/articles/?article=my-next-article`
 
 Optional clean URL:
 
 - Create `articles/<article-key>/index.html` that redirects to `../?article=<article-key>`.
-- Example added in this repo: `articles/perfo-map/index.html`.
+- Existing examples: `articles/czech-scene-sound/index.html`, `articles/perfo-map/index.html`.
 
 ## Formatting options in article HTML
 
@@ -124,7 +138,7 @@ Use inline HTML with `data-graph-path`:
 
 Notes:
 
-- Node ids in `data-graph-path` must match node ids from `.map.json` (for example `entry`, `field`).
+- Node ids in `data-graph-path` must match node ids from `map.json` (for example `entry`, `field`).
 - A chain like `a>b>c` highlights edges `a-b` and `b-c`.
 - Multiple paths are supported with separators:
   - `data-graph-path="entry>field;lineage>institution"`

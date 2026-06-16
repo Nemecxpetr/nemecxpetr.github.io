@@ -1,7 +1,6 @@
 import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
 
 (function () {
-  const DEFAULT_ARTICLE = "czech-scene-sound";
   const EDGE_BASE_WIDTH = 0.9;
   const EDGE_HIT_COLOR = "rgba(0, 0, 0, 0)";
   const EDGE_WAVE_DAMPING = 0.0105;
@@ -38,7 +37,8 @@ import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
   const activeClass = "active";
   const pageBaseUrl = getPageBaseUrl();
   const searchParams = new URLSearchParams(window.location.search);
-  const articleKey = searchParams.get("article") || DEFAULT_ARTICLE;
+  const articleKey = searchParams.get("article") || "";
+  const isArticleIndexMode = !articleKey;
   const requestedMapViewKey = String(searchParams.get("view") || "").trim();
   const printModeEnabled = isPrintModeEnabled(searchParams);
 
@@ -123,14 +123,19 @@ import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
   const soundHoverRuntime = createSoundHoverRuntime();
 
   init().catch((error) => {
-    articleContent.innerHTML = `<p class="error">Failed to load "${articleKey}". ${escapeHtml(error.message)}</p>`;
+    articleContent.innerHTML = `<p class="error">Failed to load "${articleKey || "articles index"}". ${escapeHtml(error.message)}</p>`;
   });
 
   async function init() {
-    const articleHtml = await readText(resolvePagePath(`content/${articleKey}.html`));
+    if (isArticleIndexMode) {
+      await initArticleIndex();
+      return;
+    }
+
+    const articleHtml = await readText(resolveArticlePath(articleKey, "article.html"));
     let rawMapConfig = null;
     try {
-      rawMapConfig = await readJson(resolvePagePath(`content/${articleKey}.map.json`));
+      rawMapConfig = await readJson(resolveArticlePath(articleKey, "map.json"));
     } catch (error) {
       disableMapExperience(getErrorMessage(error, "Map data could not be loaded."));
     }
@@ -188,6 +193,203 @@ import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
     } else {
       runSafely("mapless article fallback", revealArticleWithoutMap);
     }
+  }
+
+  async function initArticleIndex() {
+    document.documentElement.classList.add("article-index-mode");
+    document.body.classList.add("article-index-mode");
+    document.body.dataset.soundToggle = "off";
+
+    const manifest = await readJson(resolvePagePath("articles.json"));
+    const indexMapConfig = await buildArticleIndexMap(manifest);
+    articleMeta = indexMapConfig.meta;
+    articleContent.innerHTML = "";
+    renderMeta(articleMeta);
+
+    const mapViews = resolveMapViews(indexMapConfig);
+    mapViewByKey = mapViews.viewsByKey;
+    defaultMapViewKey = mapViews.defaultViewKey;
+    currentMapViewKey = mapViews.initialViewKey;
+    installMap(mapViewByKey.get(currentMapViewKey));
+    mapAvailable = true;
+    if (mapHelpEl) {
+      mapHelpEl.textContent = "";
+    }
+  }
+
+  async function buildArticleIndexMap(rawManifest) {
+    const articles = Array.isArray(rawManifest) ? rawManifest : [];
+    if (!articles.length) {
+      throw new Error("Article manifest is empty.");
+    }
+
+    const profiles = await Promise.all(articles.map(loadArticleSearchProfile));
+    const nodes = profiles.map((profile, index) => {
+      const angle = (Math.PI * 2 * index) / Math.max(1, profiles.length);
+      const radius = profiles.length > 3 ? 260 : 190;
+      return {
+        id: profile.key,
+        label: profile.title,
+        title: profile.title,
+        url: profile.url,
+        size: profile.weight > 1 ? 22 : 19,
+        fontSize: 15,
+        importance: index === 0 ? 1 : 2,
+        x: Math.round(Math.cos(angle) * radius),
+        y: Math.round(Math.sin(angle) * radius)
+      };
+    });
+
+    return {
+      meta: {
+        title: "Articles",
+        subtitle: "",
+        eyebrow: "Article Map",
+        pageType: "article_index",
+        preservePositions: true
+      },
+      nodes,
+      edges: buildDeepSearchArticleEdges(profiles)
+    };
+  }
+
+  async function loadArticleSearchProfile(entry) {
+    const key = String(entry && entry.key ? entry.key : "").trim();
+    if (!key) {
+      throw new Error("Article entry is missing a key.");
+    }
+
+    const [contentText, mapConfig] = await Promise.all([
+      readText(resolvePagePath(String(entry.content || ""))).catch(() => ""),
+      entry.map ? readJson(resolvePagePath(String(entry.map))).catch(() => null) : Promise.resolve(null)
+    ]);
+    const mapText = collectMapSearchText(mapConfig);
+    const title = String((mapConfig && mapConfig.meta && mapConfig.meta.title) || entry.title || key).trim();
+    const subtitle = String((mapConfig && mapConfig.meta && mapConfig.meta.subtitle) || "").trim();
+    const text = htmlToSearchText(`${title} ${subtitle} ${mapText} ${contentText}`);
+
+    return {
+      key,
+      title,
+      url: String(entry.url || `${encodeURIComponent(key)}/`).trim(),
+      tokens: tokenizeSearchText(text),
+      weight: Math.max(1, Math.round(text.length / 1400))
+    };
+  }
+
+  function collectMapSearchText(mapConfig) {
+    if (!mapConfig || typeof mapConfig !== "object") {
+      return "";
+    }
+    const parts = [];
+    const collectNodes = (nodes) => {
+      if (!Array.isArray(nodes)) {
+        return;
+      }
+      for (const node of nodes) {
+        parts.push(node.label, node.previewTitle, node.section);
+      }
+    };
+
+    collectNodes(mapConfig.nodes);
+    const views = mapConfig.views && typeof mapConfig.views === "object" ? mapConfig.views : {};
+    for (const view of Object.values(views)) {
+      collectNodes(view && view.nodes);
+    }
+    return parts.filter(Boolean).join(" ");
+  }
+
+  function htmlToSearchText(value) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(String(value || ""), "text/html");
+    doc.querySelectorAll("script, style, meta, link").forEach((el) => el.remove());
+    return (doc.body && doc.body.textContent ? doc.body.textContent : String(value || ""))
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function tokenizeSearchText(value) {
+    const stopWords = new Set([
+      "about", "after", "also", "and", "are", "but", "can", "for", "from", "has", "have", "into",
+      "not", "that", "the", "this", "with", "you", "your", "jako", "jsou", "ktere", "ktery", "pro",
+      "pri", "tak", "teto", "the", "toho", "tuto", "zvuk"
+    ]);
+    const counts = new Map();
+    const words = String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .match(/[a-z0-9]{3,}/g) || [];
+
+    for (const word of words) {
+      if (stopWords.has(word)) {
+        continue;
+      }
+      counts.set(word, (counts.get(word) || 0) + 1);
+    }
+    return counts;
+  }
+
+  function buildDeepSearchArticleEdges(profiles) {
+    const candidates = [];
+    for (let a = 0; a < profiles.length; a += 1) {
+      for (let b = a + 1; b < profiles.length; b += 1) {
+        candidates.push({
+          from: profiles[a].key,
+          to: profiles[b].key,
+          score: getSearchProfileSimilarity(profiles[a], profiles[b])
+        });
+      }
+    }
+
+    candidates.sort((a, b) => b.score - a.score);
+    const selected = new Map();
+    const degree = new Map(profiles.map((profile) => [profile.key, 0]));
+    const addEdge = (edge) => {
+      const key = [edge.from, edge.to].sort().join("::");
+      if (selected.has(key)) {
+        return;
+      }
+      selected.set(key, {
+        from: edge.from,
+        to: edge.to,
+        value: Math.max(1, Math.round(edge.score * 10))
+      });
+      degree.set(edge.from, (degree.get(edge.from) || 0) + 1);
+      degree.set(edge.to, (degree.get(edge.to) || 0) + 1);
+    };
+
+    candidates.slice(0, Math.max(1, profiles.length)).forEach(addEdge);
+    for (const profile of profiles) {
+      if ((degree.get(profile.key) || 0) > 0) {
+        continue;
+      }
+      const fallback = candidates.find((edge) => edge.from === profile.key || edge.to === profile.key);
+      if (fallback) {
+        addEdge(fallback);
+      }
+    }
+    return [...selected.values()];
+  }
+
+  function getSearchProfileSimilarity(a, b) {
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+    for (const count of a.tokens.values()) {
+      normA += count * count;
+    }
+    for (const count of b.tokens.values()) {
+      normB += count * count;
+    }
+    for (const [word, countA] of a.tokens.entries()) {
+      const countB = b.tokens.get(word) || 0;
+      dot += countA * countB;
+    }
+    if (!dot || !normA || !normB) {
+      return 0.01;
+    }
+    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 
   function runSafely(label, callback, onError) {
@@ -568,6 +770,10 @@ import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
         return;
       }
       const nodeData = getNodeData(nodeId);
+      if (nodeData && typeof nodeData.url === "string" && nodeData.url.trim()) {
+        window.location.href = new URL(nodeData.url.trim(), window.location.href).toString();
+        return;
+      }
       const targetViewKey = nodeData && typeof nodeData.openView === "string"
         ? nodeData.openView.trim()
         : "";
@@ -3955,6 +4161,10 @@ import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
 
   function resolvePagePath(relativePath) {
     return new URL(relativePath, pageBaseUrl).toString();
+  }
+
+  function resolveArticlePath(key, filename) {
+    return resolvePagePath(`${encodeURIComponent(key)}/${filename}`);
   }
 
   function readThemeValues() {

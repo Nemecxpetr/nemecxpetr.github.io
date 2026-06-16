@@ -1,0 +1,29 @@
+[
+  {
+    "key": "czech-scene-sound",
+    "title": "Postoj ke zvukovemu v ramci hudebni sceny CR",
+    "url": "czech-scene-sound/",
+    "content": "czech-scene-sound/article.html",
+    "map": "czech-scene-sound/map.json"
+  },
+  {
+    "key": "perfo-map",
+    "title": "Perfo Map",
+    "url": "perfo-map/",
+    "content": "perfo-map/article.html",
+    "map": "perfo-map/map.json"
+  },
+  {
+    "key": "sound_article",
+    "title": "Bassoon Techniques",
+    "url": "sound_article/",
+    "content": "sound_article/article.html",
+    "map": "sound_article/map.json"
+  },
+  {
+    "key": "bassoon",
+    "title": "Bassoon",
+    "url": "bassoon/",
+    "content": "bassoon/index.html"
+  }
+]
