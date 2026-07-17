@@ -1,5 +1,30 @@
 [
   {
+    "date" : "2026-07-17",
+    "dateEnd": null,
+    "title": "Zahrada zvuků",
+    "event": "UFF - Festival současného umění",
+    "type": "performance",
+    "format": "sound performance",
+    "artistRoles": [
+      "sound-artist",
+      "performer",
+      "improviser",
+      "live-electronics"
+    ],
+    "venue": "Šatlava",
+    "city": "Uničov",
+    "country": "Czech Republic",
+    "links": {
+      "primary": {
+        "label": "Event",
+        "url": "https://fb.me/e/9vg4LWl6c",
+        "platform": "facebook"
+      },
+      "secondary": []
+    }
+  },
+  {
     "date" : "2026-06-19",
     "dateEnd": null,
     "title": "Erasmus BIP - concert",
