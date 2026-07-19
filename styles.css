@@ -4,8 +4,8 @@
 :root {
   color-scheme: light dark;
   --bg: #ffffff;
-  --fg: #0b0b0b;
-  --muted: rgba(0, 0, 0, 0.65);
+  --fg: #ffcf33;
+  --muted: rgba(255, 207, 51, 0.65);
   --hairline: rgba(0, 0, 0, 0.14);
   --card: rgba(0, 0, 0, 0.03);
   --shadow: rgba(0, 0, 0, 0.08);
@@ -26,8 +26,8 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0b0b0b;
-    --fg: #ffffff;
-    --muted: rgba(255, 255, 255, 0.72);
+    --fg: #ffcf33;
+    --muted: rgba(255, 207, 51, 0.72);
     --hairline: rgba(255, 255, 255, 0.16);
     --card: rgba(255, 255, 255, 0.04);
     --shadow: rgba(0, 0, 0, 0.40);
@@ -41,8 +41,8 @@ html.print-theme-light,
 body.print-theme-light {
   color-scheme: light;
   --bg: #ffffff;
-  --fg: #0b0b0b;
-  --muted: rgba(0, 0, 0, 0.65);
+  --fg: #ffcf33;
+  --muted: rgba(255, 207, 51, 0.65);
   --hairline: rgba(0, 0, 0, 0.14);
   --card: rgba(0, 0, 0, 0.03);
   --shadow: rgba(0, 0, 0, 0.08);
@@ -54,8 +54,8 @@ html.print-theme-dark,
 body.print-theme-dark {
   color-scheme: dark;
   --bg: #0b0b0b;
-  --fg: #ffffff;
-  --muted: rgba(255, 255, 255, 0.72);
+  --fg: #ffcf33;
+  --muted: rgba(255, 207, 51, 0.72);
   --hairline: rgba(255, 255, 255, 0.16);
   --card: rgba(255, 255, 255, 0.04);
   --shadow: rgba(0, 0, 0, 0.40);
