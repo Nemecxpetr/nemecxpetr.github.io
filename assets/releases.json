@@ -609,7 +609,8 @@
           "platform": "youtube"
         }
       ]
-    }
+    },
+    "cv":true
   },
   {
     "date": "2025-10-29",
@@ -668,7 +669,8 @@
         "platform": "web"
       },
       "secondary": []
-    }
+    },
+    "cv":true
   },
   {
     "date": "2025-09-20",
@@ -730,7 +732,8 @@
         "platform": "web"
       },
       "secondary": []
-    }
+    }, 
+    "cv":true
   },
   {
     "date": "2025-09-11",
@@ -756,7 +759,8 @@
         "platform": "web"
       },
       "secondary": []
-    }
+    },
+    "cv":true
   },
   {
     "date": "2025-04-23",
@@ -782,7 +786,8 @@
     "links": {
       "primary": null,
       "secondary": []
-    }
+    },
+    "cv":true
   },
   {
     "date": "2025-04-09",
@@ -807,7 +812,8 @@
     "links": {
       "primary": null,
       "secondary": []
-    }
+    },
+    "cv":true 
   },
   {
     "date": "2024-10-17",

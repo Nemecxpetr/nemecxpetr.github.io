@@ -19,6 +19,7 @@ cv/
 
 # Public download linked from the site.
 !assets/Petr_Nemec_PR_media_package.zip
+!assets/CV_2026.pdf
 
 # Allow intentionally published, dated portfolio PDFs only.
 !assets/portfolio/
