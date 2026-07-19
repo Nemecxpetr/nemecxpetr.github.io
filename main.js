@@ -1,5 +1,6 @@
 import { initBackgroundFx } from "./js/background-fx.js";
 import { initReleases } from "./js/releases.js";
+import { initPhotosGallery } from "./js/photos.js";
 import {
   isAudioEnabled,
   playPluck,
@@ -16,8 +17,10 @@ const PORTFOLIO_PRINT_SOURCE_URL = "https://nemecxpetr.github.io/pjotrgerman.git
  * Architecture:
  * - `initReleases()` only acts if release containers exist on the page.
  * - `initBackgroundFx()` only acts if background canvas exists.
+ * - `initPhotosGallery()` only acts if the photos stage exists on the page.
  *
- * This lets one shared entry point power both `index.html` and `releases.html`.
+ * This lets one shared entry point power `index.html`, `releases.html`,
+ * `playground.html`, and `photos.html`.
  */
 
 function initPrintModeState() {
@@ -435,6 +438,7 @@ function bootstrap() {
   runInitStep("persisted audio restore", initPersistedAudioRestore);
   runInitStep("playground word file", initPlaygroundWordFile);
   runInitStep("releases", initReleases);
+  runInitStep("photos gallery", initPhotosGallery);
   runInitStep("sound toggle", initSoundToggle);
   runInitStep("print fx bridge", initPrintFxBridge);
   runInitStep("background fx", () => {
