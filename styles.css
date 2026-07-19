@@ -476,24 +476,18 @@ body.fx-click-hint .wrap {
   transform: translate3d(calc((1 - var(--release-mode-progress)) * -1.5%), 0, 0);
 }
 
-.work.release .work-meta {
+.work.release {
+  --release-role-wash: transparent;
+  --release-hover-wash: transparent;
   background: linear-gradient(
       0deg,
-      rgba(0, 0, 0, var(--release-dark, 0)),
-      rgba(0, 0, 0, var(--release-dark, 0))
+      var(--release-hover-wash),
+      var(--release-hover-wash)
     ),
-    var(--card);
-}
-
-.work.release.release-has-roles {
-  border-color: color-mix(in srgb, var(--release-role-color) 68%, var(--hairline));
-}
-
-.work.release.release-has-roles .work-meta {
-  background: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--release-role-color) 15%, transparent),
-      transparent 34%
+    linear-gradient(
+      135deg,
+      var(--release-role-wash),
+      transparent 200%
     ),
     linear-gradient(
       0deg,
@@ -503,10 +497,19 @@ body.fx-click-hint .wrap {
     var(--card);
 }
 
+.work.release .work-meta {
+  background: transparent;
+}
+
+.work.release.release-has-roles {
+  border-color: color-mix(in srgb, var(--release-role-color) 68%, var(--hairline));
+  --release-role-wash: color-mix(in srgb, var(--release-role-color) 67%, transparent);
+}
+
 .work.release.release-has-roles::before {
   content: "";
   display: block;
-  height: 4px;
+  height: 7px;
   background: var(--release-role-color);
 }
 
@@ -519,20 +522,16 @@ body.fx-click-hint .wrap {
 }
 
 @media (prefers-color-scheme: dark) {
-  .work.release .work-meta {
+  .work.release {
     background: linear-gradient(
         0deg,
-        rgba(255, 255, 255, var(--release-light, 0)),
-        rgba(255, 255, 255, var(--release-light, 0))
+        var(--release-hover-wash),
+        var(--release-hover-wash)
       ),
-      var(--card);
-  }
-
-  .work.release.release-has-roles .work-meta {
-    background: linear-gradient(
-        90deg,
-        color-mix(in srgb, var(--release-role-color) 20%, transparent),
-        transparent 34%
+      linear-gradient(
+        135deg,
+        var(--release-role-wash),
+        transparent 200%
       ),
       linear-gradient(
         0deg,
@@ -540,6 +539,10 @@ body.fx-click-hint .wrap {
         rgba(255, 255, 255, var(--release-light, 0))
       ),
       var(--card);
+  }
+
+  .work.release.release-has-roles {
+    --release-role-wash: color-mix(in srgb, var(--release-role-color) 67%, transparent);
   }
 }
 
@@ -783,7 +786,7 @@ body[data-release-page="true"].print-mode .release-secondary-action {
 
 .release-card-link:hover .work.release {
   border-color: currentColor;
-  background: var(--release-col-hover);
+  --release-hover-wash: var(--release-col-hover);
 }
 
 .release-card-link:focus-visible {
