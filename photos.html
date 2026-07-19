@@ -135,7 +135,7 @@
   <main>
     <header class="page-header">
       <h1>Photos - Petr Němec</h1>
-      <a class="back-link" href="index.html">Back</a>
+      <a class="back-link" href="index.html" data-close-tab>Back</a>
     </header>
     <p id="status" class="status">Loading...</p>
     <div id="photo-list" class="photo-list" hidden></div>
@@ -155,6 +155,14 @@
     const viewer = document.getElementById("viewer");
     const viewerImage = document.getElementById("viewer-image");
     const viewerClose = document.getElementById("viewer-close");
+
+    document.querySelector("[data-close-tab]")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      window.close();
+      window.setTimeout(() => {
+        window.location.href = "index.html";
+      }, 120);
+    });
 
     function validPhotoName(value) {
       return typeof value === "string" && value.trim() && !value.includes("/") && !value.includes("\\");

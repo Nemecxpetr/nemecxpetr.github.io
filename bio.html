@@ -67,7 +67,7 @@
           Bio - petr němec
         </a>
       </h1>
-      <a class="back-link" href="index.html">Back</a>
+      <a class="back-link" href="index.html" data-close-tab>Back</a>
     </header>
     <pre id="bio-content" class="bio-text">Loading…</pre>
   </main>
@@ -75,6 +75,14 @@
   <script>
     const target = document.getElementById("bio-content");
     const candidates = ["assets/bio.txt", "bio.txt"];
+
+    document.querySelector("[data-close-tab]")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      window.close();
+      window.setTimeout(() => {
+        window.location.href = "index.html";
+      }, 120);
+    });
 
     function decodeBytes(buffer) {
       const encodings = ["utf-8", "windows-1250", "iso-8859-2", "latin2"];
