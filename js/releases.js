@@ -347,6 +347,10 @@ function isPrintModeActive() {
   );
 }
 
+function isCvSelectedItem(item) {
+  return Boolean(item && item.cv === true);
+}
+
 function getTodayUtcDateValue() {
   const now = new Date();
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
@@ -779,16 +783,21 @@ function renderLatestReleasesForCurrentMode() {
     return;
   }
 
-  const limit = isPrintModeActive()
-    ? releaseRuntimeState.latestItems.length
+  const printMode = isPrintModeActive();
+  const items = printMode
+    ? releaseRuntimeState.latestItems.filter(isCvSelectedItem)
+    : releaseRuntimeState.latestItems;
+  const limit = printMode
+    ? items.length
     : 3;
 
   renderReleases(
     releaseRuntimeState.latestReleasesEl,
-    releaseRuntimeState.latestItems,
+    items,
     {
       ...releaseRuntimeState.latestOptions,
-      limit
+      limit,
+      emptyText: printMode ? "No CV-selected past events yet." : "No past releases yet."
     }
   );
 
