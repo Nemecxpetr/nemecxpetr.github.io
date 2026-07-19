@@ -133,9 +133,15 @@
         "url": "https://48-stunden-neukoelln.de/de/festival",
         "platform": "website"
       },
-      "secondary": []
+      "secondary": [
+        {
+        "label": "Recording",
+        "url": "https://youtu.be/3RCdg9kN18E",
+        "platform": "youtube"
+      }
+    ]
     },
-    "cv":false
+    "cv":true
   },
   {
     "date": "2026-05-22",
@@ -209,13 +215,19 @@
         "url": "index.html#work-cesta-do-kralovstvi-much",
         "platform": "portfolio"
       },
-      "secondary": []
+      "secondary": [
+        {
+          "label": "Bandcamp",
+          "url": "https://petrnemec.bandcamp.com/track/cesta-do-kr-lovstv-much",
+          "platform": "bandcamp"
+        }
+      ]
     }
   },
   {
     "date": "2026-04-11",
     "dateEnd": null,
-    "title": "Sound performance",
+    "title": "blueberry muffin",
     "event": "DIY event",
     "type": "performance",
     "format": "sound performance",
@@ -232,8 +244,18 @@
     ],
     "context": "",
     "links": {
-      "primary": null,
-      "secondary": []
+      "primary": {
+        "label": "Event",
+        "url": "https://www.instagram.com/detiposlednihokmene/p/DWNDaApgj8f/",
+        "platform": "instagram"
+      },
+      "secondary": [
+        {
+          "label": "Video",
+          "url": "https://youtu.be/VqdCg2qK9lw?si=hBzbGIZD9j3fTH6M",
+          "platform": "youtube"
+        }
+      ]
     }
   },
   {
@@ -287,7 +309,8 @@
         "url": "https://www.divadlox10.cz/cs/y-events/y-haunted-realities-ii-x-ray",
         "platform": "web"
       },
-      "secondary": []
+      "secondary": [
+      ]
     }
   },
   {
@@ -309,7 +332,13 @@
         "url": "https://tidal.com/album/508281854",
         "platform": "tidal"
       },
-      "secondary": []
+      "secondary": [
+        {
+          "label": "Buy",
+          "url": "https://petrnemec.bandcamp.com/track/sn-enky",
+          "platform": "bandcamp"
+        }
+      ]
     },
     "cv":false
   },
@@ -529,7 +558,7 @@
     "context": "",
     "links": {
       "primary": {
-        "label": "Portfolio",
+        "label": "Video",
         "url": "index.html#works",
         "platform": "portfolio"
       },
@@ -568,6 +597,11 @@
           "label": "Event",
           "url": "https://fb.me/e/85wFKYg27",
           "platform": "facebook"
+        },
+        {
+          "label": "360 Video",
+          "url": "https://youtu.be/-iINWMupkYo?si=VOi-NasCb_eSuP9h",
+          "platform": "youtube"
         }
       ]
     }
