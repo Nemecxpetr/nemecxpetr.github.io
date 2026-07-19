@@ -635,7 +635,8 @@
         "platform": "facebook"
       },
       "secondary": []
-    }
+    },
+    "cv":false
   },
   {
     "date": "2025-10-18",
@@ -829,7 +830,8 @@
         "platform": "instagram"
       },
       "secondary": []
-    }
+    },
+    "cv":false
   },
   {
     "date": "2024-09-12",
