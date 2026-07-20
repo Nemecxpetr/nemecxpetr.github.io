@@ -56,3 +56,6 @@ desktop.ini
 *.swo
 *~
 article_archive.txt
+
+# Hidden stuff
+* assets/hidden_promo/
