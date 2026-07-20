@@ -1,5 +1,32 @@
 [
   {
+    "date": "2026-07-20",
+    "dateEnd": null,
+    "title": "rýmařovský koláč",
+    "type": "single",
+    "format": "single release",
+    "artistRoles": ["composer", "release-artist"],
+    "venue": "",
+    "city": "",
+    "country": "",
+    "collaborators": [],
+    "context": "",
+    "links": {
+      "primary": {
+        "label": "Listen",
+        "url": "https://on.soundcloud.com/QCqTOwe2nToYGHiWFa",
+        "platform": "soundcloud"
+      },
+      "secondary": []
+    },
+    "embed": {
+      "type": "soundcloud",
+      "src": "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2364304373&color=%23e8bc88&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
+      "height": 300
+    },
+    "cv": false
+  },
+  {
     "date" : "2026-07-17",
     "dateEnd": null,
     "title": "Zahrada zvuků",
@@ -75,6 +102,11 @@
         "platform": "bandcamp"
       },
       "secondary": []
+    },
+    "embed": {
+      "type": "bandcamp",
+      "src": "https://bandcamp.com/EmbeddedPlayer/album=3390332978/size=large/bgcol=ffffff/linkcol=0687f5/minimal=true/transparent=true/",
+      "height": 300
     },
     "cv":false
   },

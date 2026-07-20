@@ -718,6 +718,113 @@ function renderReleases(target, items, options) {
   }
 }
 
+function isReleaseItem(item) {
+  if (!item) {
+    return false;
+  }
+  const type = cleanText(item.type).toLowerCase();
+  const format = cleanText(item.format).toLowerCase();
+  return (
+    type === "single"
+    || type === "album"
+    || format.includes("release")
+    || getArtistRoles(item).includes("release-artist")
+  );
+}
+
+function getLatestReleasedItem(items, todayUtcDateValue) {
+  return items.find((item) => {
+    const dateValue = getReleaseBoundaryDateValue(item);
+    return isReleaseItem(item) && dateValue > 0 && dateValue <= todayUtcDateValue;
+  }) || null;
+}
+
+function normalizeReleaseEmbed(embed) {
+  if (!embed || typeof embed !== "object") {
+    return null;
+  }
+  const src = cleanText(embed.src);
+  if (!src) {
+    return null;
+  }
+  const height = Number(embed.height);
+  return {
+    src,
+    type: cleanText(embed.type),
+    height: Number.isFinite(height) ? Math.max(120, Math.min(520, height)) : 300
+  };
+}
+
+function renderLatestReleasePlayer(target, item) {
+  if (!target) {
+    return;
+  }
+  target.innerHTML = "";
+
+  if (!item) {
+    const empty = document.createElement("p");
+    empty.className = "work-desc";
+    empty.textContent = "No release player yet.";
+    target.appendChild(empty);
+    return;
+  }
+
+  const titleText = cleanText(item.title) || cleanText(item.work) || "Latest release";
+  const embed = normalizeReleaseEmbed(item.embed);
+  const primary = getPrimaryReleaseLink(item);
+  const card = document.createElement("article");
+  card.className = "work latest-release-card";
+
+  const meta = document.createElement("div");
+  meta.className = "work-meta";
+  const title = document.createElement("h3");
+  title.textContent = titleText;
+  meta.appendChild(title);
+
+  const detailLine = document.createElement("p");
+  detailLine.className = "work-desc";
+  appendDetailText(detailLine, formatDateRange(item));
+  appendDetailText(detailLine, cleanText(item.format) || cleanText(item.type));
+  if (detailLine.childNodes.length > 0) {
+    meta.appendChild(detailLine);
+  }
+
+  card.appendChild(meta);
+
+  if (embed) {
+    const embedWrap = document.createElement("div");
+    embedWrap.className = "embed latest-release-embed";
+    embedWrap.setAttribute("aria-label", `${titleText} audio player`);
+    embedWrap.style.height = `${embed.height}px`;
+
+    const iframe = document.createElement("iframe");
+    iframe.src = embed.src;
+    iframe.title = `${titleText} player`;
+    iframe.height = String(embed.height);
+    iframe.scrolling = "no";
+    iframe.frameBorder = "0";
+    iframe.allow = "autoplay; encrypted-media";
+    iframe.loading = "lazy";
+    embedWrap.appendChild(iframe);
+    card.appendChild(embedWrap);
+  } else if (primary) {
+    const actions = document.createElement("div");
+    actions.className = "highlight-card";
+    const anchor = document.createElement("a");
+    anchor.className = "btn";
+    anchor.href = primary.url;
+    anchor.textContent = primary.label;
+    if (/^https?:\/\//i.test(primary.url)) {
+      anchor.target = "_blank";
+      anchor.rel = "noreferrer";
+    }
+    actions.appendChild(anchor);
+    card.appendChild(actions);
+  }
+
+  target.appendChild(card);
+}
+
 function fitLatestReleasesForPrint() {
   const latestSectionEl = releaseRuntimeState.latestSectionEl;
   const latestReleasesEl = releaseRuntimeState.latestReleasesEl;
@@ -979,6 +1086,7 @@ async function loadReleases({
   releasesUrl,
   upcomingReleasesEl,
   latestReleasesEl,
+  latestReleasePlayerEl,
   allReleasesEl,
   fullPastReleasesEl,
   fullUpcomingReleasesEl,
@@ -988,6 +1096,7 @@ async function loadReleases({
   if (
     !upcomingReleasesEl
     && !latestReleasesEl
+    && !latestReleasePlayerEl
     && !allReleasesEl
     && !fullPastReleasesEl
     && !fullUpcomingReleasesEl
@@ -1026,6 +1135,7 @@ async function loadReleases({
       });
     const latest = indexed.filter((item) => getReleaseTemporalMode(item, todayUtc) === RELEASE_MODE_PAST);
     const past = latest;
+    const latestReleasedItem = getLatestReleasedItem(indexed, todayUtc);
 
     const yearRange = getYearRange(indexed);
     const tintRange = getTintRange(indexed);
@@ -1072,6 +1182,9 @@ async function loadReleases({
       releaseRuntimeState.latestSectionEl = latestReleasesEl.closest("#releases");
       renderLatestReleasesForCurrentMode();
       ensureLatestReleasesPrintLifecycle();
+    }
+    if (latestReleasePlayerEl) {
+      renderLatestReleasePlayer(latestReleasePlayerEl, latestReleasedItem);
     }
     if (fullPastReleasesEl) {
       renderReleases(fullPastReleasesEl, past, {
@@ -1126,6 +1239,9 @@ async function loadReleases({
       renderLatestReleasesForCurrentMode();
       ensureLatestReleasesPrintLifecycle();
     }
+    if (latestReleasePlayerEl) {
+      renderLatestReleasePlayer(latestReleasePlayerEl, null);
+    }
     if (fullPastReleasesEl) {
       renderReleases(fullPastReleasesEl, [], {
         limit: 0,
@@ -1164,6 +1280,7 @@ export function initReleases({
   releasesUrl = DEFAULT_RELEASES_URL,
   upcomingContainerId = "upcoming-releases",
   latestContainerId = "latest-releases",
+  latestReleasePlayerContainerId = "latest-release-player",
   allContainerId = "all-releases",
   fullPastContainerId = "past-releases",
   fullUpcomingContainerId = "upcoming-releases-full",
@@ -1172,6 +1289,7 @@ export function initReleases({
 } = {}) {
   const upcomingReleasesEl = document.getElementById(upcomingContainerId);
   const latestReleasesEl = document.getElementById(latestContainerId);
+  const latestReleasePlayerEl = document.getElementById(latestReleasePlayerContainerId);
   const allReleasesEl = document.getElementById(allContainerId);
   const fullPastReleasesEl = document.getElementById(fullPastContainerId);
   const fullUpcomingReleasesEl = document.getElementById(fullUpcomingContainerId);
@@ -1181,6 +1299,7 @@ export function initReleases({
   if (
     !upcomingReleasesEl
     && !latestReleasesEl
+    && !latestReleasePlayerEl
     && !allReleasesEl
     && !fullPastReleasesEl
     && !fullUpcomingReleasesEl
@@ -1192,6 +1311,7 @@ export function initReleases({
     releasesUrl,
     upcomingReleasesEl,
     latestReleasesEl,
+    latestReleasePlayerEl,
     allReleasesEl,
     fullPastReleasesEl,
     fullUpcomingReleasesEl,

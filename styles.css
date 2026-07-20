@@ -1102,6 +1102,14 @@ body[data-release-page="true"].print-mode .release-secondary-action {
   display: block;
 }
 
+.latest-release-player {
+  width: 100%;
+}
+
+.latest-release-embed {
+  aspect-ratio: auto;
+}
+
 .vertical-grid {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
