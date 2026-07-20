@@ -105,7 +105,7 @@
     },
     "embed": {
       "type": "bandcamp",
-      "src": "https://bandcamp.com/EmbeddedPlayer/album=3390332978/size=large/bgcol=ffffff/linkcol=0687f5/minimal=true/transparent=true/",
+      "src": "https://bandcamp.com/EmbeddedPlayer/album=3390332978/size=large/bgcol=333333/linkcol=0f91ff/artwork=small/transparent=true/",
       "height": 300
     },
     "cv":false
@@ -252,11 +252,6 @@
         "platform": "portfolio"
       },
       "secondary": [
-        {
-          "label": "Bandcamp",
-          "url": "https://petrnemec.bandcamp.com/track/cesta-do-kr-lovstv-much",
-          "platform": "bandcamp"
-        }
       ]
     }
   },
