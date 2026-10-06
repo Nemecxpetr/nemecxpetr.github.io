@@ -245,6 +245,16 @@ body.fx-click-hint .wrap {
   border-bottom-color: currentColor;
 }
 
+.hero-structure-link-button {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .links {
   display: flex;
   flex-wrap: wrap;
@@ -1034,6 +1044,7 @@ body[data-release-page="true"].print-mode .release-secondary-action {
 }
 
 .playground-cta {
+  appearance: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1048,8 +1059,10 @@ body[data-release-page="true"].print-mode .release-secondary-action {
   box-shadow: 0 10px 30px rgba(255, 106, 61, 0.22);
   font-weight: 700;
   font-size: clamp(14px, 2.6vw, 18px);
+  font-family: inherit;
   line-height: 1.25;
   text-align: center;
+  cursor: pointer;
 }
 
 .playground-cta:hover {
@@ -1061,6 +1074,108 @@ body[data-release-page="true"].print-mode .release-secondary-action {
 .playground-cta:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 3px;
+}
+
+.playground-menu {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: clamp(24px, 6vh, 64px) var(--pad);
+  border: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.playground-menu::backdrop {
+  background: rgba(7, 9, 11, 0.86);
+  backdrop-filter: blur(8px);
+}
+
+.playground-menu-inner {
+  position: relative;
+  width: min(100%, 980px);
+  min-height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.playground-menu-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: transparent;
+  color: currentColor;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.playground-menu-label {
+  margin-bottom: 12px;
+  color: #e65d32;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.playground-menu h2 {
+  margin-bottom: 32px;
+  font-size: 40px;
+}
+
+.playground-game-list {
+  display: grid;
+  border-top: 1px solid var(--hairline);
+}
+
+.playground-game-link {
+  display: grid;
+  grid-template-columns: 56px 1fr 32px;
+  align-items: center;
+  gap: 16px;
+  min-height: 112px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.playground-game-number {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.playground-game-link > i {
+  justify-self: end;
+  color: #e65d32;
+  font-size: 20px;
+  transition: transform 160ms ease;
+}
+
+.playground-game-link:hover > i,
+.playground-game-link:focus-visible > i {
+  transform: translateX(5px);
+}
+
+@media (max-width: 520px) {
+  .playground-menu h2 {
+    font-size: 32px;
+  }
+
+  .playground-game-link {
+    grid-template-columns: 36px 1fr 24px;
+    gap: 12px;
+    min-height: 92px;
+    font-size: 26px;
+  }
 }
 
 .playground-page {

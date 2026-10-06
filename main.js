@@ -102,6 +102,23 @@ function initYearLabel() {
   }
 }
 
+function initPlaygroundMenu() {
+  const menu = document.getElementById("playground-menu");
+  const openButtons = document.querySelectorAll("[data-playground-menu-open]");
+  const closeButton = menu?.querySelector(".playground-menu-close");
+  if (!(menu instanceof HTMLDialogElement) || !openButtons.length || !closeButton) {
+    return;
+  }
+
+  openButtons.forEach((button) => button.addEventListener("click", () => menu.showModal()));
+  closeButton.addEventListener("click", () => menu.close());
+  menu.addEventListener("click", (event) => {
+    if (event.target === menu) {
+      menu.close();
+    }
+  });
+}
+
 function initPrintWorkLinks() {
   const workEls = [...document.querySelectorAll(".work")];
   if (!workEls.length) {
@@ -434,6 +451,7 @@ function bootstrap() {
 
   runInitStep("print mode state", initPrintModeState);
   runInitStep("year label", initYearLabel);
+  runInitStep("playground menu", initPlaygroundMenu);
   runInitStep("print work links", initPrintWorkLinks);
   runInitStep("persisted audio restore", initPersistedAudioRestore);
   runInitStep("playground word file", initPlaygroundWordFile);

@@ -41,7 +41,7 @@
         <a class="hero-structure-link" href="#works">Works</a>
         <a class="hero-structure-link" href="#releases">Releases</a>
         <a class="hero-structure-link" href="#research">Research</a>
-        <a class="hero-structure-link" href=playground.html>Playground</a>
+        <button class="hero-structure-link hero-structure-link-button" type="button" data-playground-menu-open aria-haspopup="dialog">Playground</button>
       </nav>
     </header>
 
@@ -319,10 +319,32 @@
     </section>
 
     <section class="section playground-cta-section" id="playground-link">
-      <a class="playground-cta" href="playground.html">
+      <button class="playground-cta" type="button" data-playground-menu-open aria-haspopup="dialog">
         <span>(( ´▽｀) PLAYGROUND&nbsp;&nbsp;p(≧∀≦)人(≧∀≦)♪</span>
-      </a>
+      </button>
     </section>
+
+    <dialog class="playground-menu" id="playground-menu" aria-labelledby="playground-menu-title">
+      <div class="playground-menu-inner">
+        <button class="playground-menu-close" type="button" aria-label="Close playground menu" title="Close menu">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+        <p class="playground-menu-label">PLAYGROUND</p>
+        <h2 id="playground-menu-title">Choose a game</h2>
+        <nav class="playground-game-list" aria-label="Playground games">
+          <a class="playground-game-link" href="playground.html">
+            <span class="playground-game-number">01</span>
+            <span>Playground</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+          <a class="playground-game-link" href="cellular.html">
+            <span class="playground-game-number">02</span>
+            <span>Cellular</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </nav>
+      </div>
+    </dialog>
 
     <footer class="footer">
       <p>© <span id="year"></span> Petr Němec</p>

@@ -1,0 +1,200 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<html><body style="margin:0;background:#000">
+<canvas id="cv"></canvas>
+<script>
+const CELL = 12;                                   // target pixels per cell
+const W = Math.floor(innerWidth / CELL);
+const H = Math.floor(innerHeight / CELL);
+const cv = document.getElementById('cv');
+cv.width = W; cv.height = H;
+cv.style.touchAction = 'none';
+const ctx = cv.getContext('2d');
+
+function fit() {
+  // largest size that keeps the grid's aspect ratio and fits in the window
+  const scale = Math.min(innerWidth / W, innerHeight / H);
+  cv.style.width  = W * scale + 'px';
+  cv.style.height = H * scale + 'px';
+}
+cv.width = W; cv.height = H;          // internal resolution = number of cells
+cv.style.imageRendering = 'pixelated';
+cv.style.display = 'block';
+fit();
+addEventListener('resize', fit);
+
+let grid = new Uint8Array(W * H);   // cell (x,y) lives at index y*W + x
+
+function randomize(density) {
+  for (let i = 0; i < grid.length; i++) grid[i] = Math.random() < density ? 1 : 0;
+}
+
+function draw() {
+  const img = ctx.createImageData(W, H);
+  for (let i = 0; i < grid.length; i++) {
+    const v = grid[i] * 255;
+    img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function paint(e) {
+  const r = cv.getBoundingClientRect();
+  const x = Math.floor((e.clientX - r.left) / r.width * W);
+  const y = Math.floor((e.clientY - r.top) / r.height * H);
+  if (x >= 0 && x < W && y >= 0 && y < H) grid[y * W + x] = 1;
+  draw();
+}
+cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); paint(e); });
+cv.addEventListener('pointermove', e => { if (e.buttons) paint(e); });
+
+randomize(0.3); draw();
+
+
+let running = true, acc = 0, last = performance.now();
+
+
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (running) {
+    acc += dt * params.rate;
+    while (acc >= 1) { grid = update(grid); acc -= 1; }
+    draw();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+addEventListener('keydown', e => {
+  if (e.code === 'Space') running = !running;
+  if (e.key === 's') { grid = update(grid); draw(); }       // single step
+  if (e.key === 'ArrowUp')   { params.rate *= 1.25; showParams(); }
+  if (e.key === 'ArrowDown') { params.rate /= 1.25; showParams(); }
+
+  const k = keys[e.key];
+
+  if (k) setParam(k[0], Math.max(0, +(params[k[0]] + k[1]).toFixed(3)));
+});
+
+function countNeighbours(g, x, y) {
+  let n = 0;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    if (dx === 0 && dy === 0) continue;
+    n += g[((y + dy + H) % H) * W + (x + dx + W) % W];   // wraps at the edges
+  }
+  return n;
+}
+
+function update(g) {
+  const next = new Uint8Array(W * H);     // NEW array: never write into g
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x, n = countNeighbours(g, x, y);
+    // TODO: set next[i] from g[i] (is the cell alive?) and n
+    const alive = g[i] === 1;
+    next[i] = (alive && n >= params.surv_lo && n <= params.surv_hi) 
+    || (!alive && n >= params.birth_lo && n <= params.birth_hi) 
+    ? 1 
+    : 0;
+  }
+  return next;
+}
+
+function placeGlider(x, y) {
+  grid.fill(0);
+  for (const [dx, dy] of [[1,0],[2,1],[0,2],[1,2],[2,2]]) grid[(y + dy) * W + x + dx] = 1;
+}
+
+const sliders = {};
+const params = { birth_lo: 3, birth_hi: 5, surv_lo: 2, surv_hi: 2, noise: 0.2, rate: 12.66 };
+
+function setParam(name, v) {
+  if (name in params) { params[name] = v; showParams(); }
+}
+
+const info = document.createElement('pre');
+info.style.cssText = 'position:fixed;top:4px;right:8px;color:#8f8;margin:0;font:12px monospace';
+document.body.appendChild(info);
+function showParams() {
+  info.textContent = JSON.stringify(params, null, 1);
+  for (const k in sliders) {
+    sliders[k].input.value = params[k];
+    sliders[k].out.textContent = Number(params[k].toFixed(3));
+  }
+}
+showParams();
+
+const keys = {
+  q: ['birth_lo', -1], w: ['birth_lo', 1],
+  e: ['birth_hi', -1], r: ['birth_hi', 1],
+  z: ['surv_lo',  -1], x: ['surv_lo',  1],
+  c: ['surv_hi',  -1], v: ['surv_hi',  1],
+  b: ['noise', -0.001], n: ['noise', 0.001],
+};
+
+const legend = document.createElement('pre');
+legend.style.cssText = 'position:fixed;bottom:4px;left:8px;color:#8f8;margin:0;font:12px monospace;pointer-events:none';
+document.body.appendChild(legend);
+
+function buildLegend() {
+  const by = {};                                   // group the two keys of each parameter
+  for (const [key, [name, delta]] of Object.entries(keys)) {
+    by[name] ??= {};
+    by[name][delta < 0 ? 'dec' : 'inc'] = key;
+  }
+  const lines = Object.entries(by).map(([name, k]) => `${k.dec} / ${k.inc}   ${name}`);
+  lines.push('up / down   rate', 'space   pause', 's   step', 'l   hide legend');
+  legend.textContent = lines.join('\n');
+}
+buildLegend();
+
+addEventListener('keydown', e => {
+  if (e.key === 'l') legend.style.display = legend.style.display === 'none' ? '' : 'none';
+});
+
+const ranges = {                       // [min, max, step]
+  birth_lo: [0, 8, 1], birth_hi: [0, 8, 1],
+  surv_lo:  [0, 8, 1], surv_hi:  [0, 8, 1],
+  noise: [0, 0.2, 0.001], rate: [1, 60, 0.5],
+};
+
+const panel = document.createElement('div');
+panel.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#000d;padding:8px 12px;' +
+                      'font:13px monospace;color:#8f8;display:none';
+document.body.appendChild(panel);
+
+for (const k in ranges) {
+  const [min, max, step] = ranges[k];
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:90px 1fr 50px;gap:8px;align-items:center;margin:6px 0';
+  const label = document.createElement('span'); label.textContent = k;
+  const input = document.createElement('input');
+  Object.assign(input, { type: 'range', min, max, step });
+  const out = document.createElement('span');
+  input.addEventListener('input', () => setParam(k, +input.value));
+  row.append(label, input, out);
+  panel.appendChild(row);
+  sliders[k] = { input, out };
+}
+
+function addButton(text, fn, parent = panel) {
+  const b = document.createElement('button');
+  b.textContent = text;
+  b.style.cssText = 'font:14px monospace;padding:8px 12px;margin:4px 4px 0 0;background:#111;color:#8f8;border:1px solid #484;border-radius:4px';
+  b.addEventListener('click', fn);
+  parent.appendChild(b);
+  return b;
+}
+addButton('pause / run', () => { running = !running; });
+addButton('step',        () => { grid = update(grid); draw(); });
+addButton('random',      () => { randomize(0.3); draw(); });
+addButton('clear',       () => { grid.fill(0); draw(); });
+
+const toggle = addButton('controls', () => {
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}, document.body);
+toggle.style.cssText += ';position:fixed;top:4px;left:4px;opacity:0.7';
+
+showParams();                          // fill in slider values now that they exist
+
+if (matchMedia('(pointer: coarse)').matches) legend.style.display = 'none';   // no keys on touch
+</script></body></html>
