@@ -161,6 +161,7 @@ export function initBackgroundFx({
   let dpr = Math.max(1, window.devicePixelRatio || 1);
   let w = 0;
   let h = 0;
+  let cachedTextRects = null;
 
   let maskData = null;
   let maskW = 0;
@@ -407,11 +408,167 @@ export function initBackgroundFx({
     dpr = Math.max(1, window.devicePixelRatio || 1);
     w = window.innerWidth;
     h = window.innerHeight;
+    cachedTextRects = null;
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
     canvas.style.width = `${w}px`;
     canvas.style.height = `${h}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function getVisibleTextRects() {
+    if (cachedTextRects) {
+      return cachedTextRects;
+    }
+
+    const rawRects = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let textNode = walker.nextNode();
+    const styleByParent = new WeakMap();
+    const range = document.createRange();
+
+    while (textNode) {
+      if (textNode.textContent && textNode.textContent.trim()) {
+        const parent = textNode.parentElement;
+        if (
+          parent &&
+          !parent.closest("script, style, noscript, template, svg, canvas, [hidden], [aria-hidden='true']")
+        ) {
+          let style = styleByParent.get(parent);
+          if (!style) {
+            style = window.getComputedStyle(parent);
+            styleByParent.set(parent, style);
+          }
+          if (style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0") {
+            range.selectNodeContents(textNode);
+            const clientRects = range.getClientRects();
+            for (let i = 0; i < clientRects.length; i += 1) {
+              const rect = clientRects[i];
+              if (rect.width > 0 && rect.height > 0) {
+                rawRects.push({
+                  left: rect.left,
+                  top: rect.top,
+                  right: rect.right,
+                  bottom: rect.bottom
+                });
+              }
+            }
+          }
+        }
+      }
+      textNode = walker.nextNode();
+    }
+
+    rawRects.sort((a, b) => a.top - b.top || a.left - b.left);
+    const lineRects = [];
+    for (const rect of rawRects) {
+      let merged = null;
+      for (let i = lineRects.length - 1; i >= 0; i -= 1) {
+        const candidate = lineRects[i];
+        if (candidate.bottom < rect.top - 2) {
+          break;
+        }
+        const verticalOverlap = Math.min(candidate.bottom, rect.bottom) - Math.max(candidate.top, rect.top);
+        const minHeight = Math.min(candidate.bottom - candidate.top, rect.bottom - rect.top);
+        if (verticalOverlap >= minHeight * 0.6 && rect.left <= candidate.right + 10 && rect.right >= candidate.left - 10) {
+          merged = candidate;
+          break;
+        }
+      }
+
+      if (merged) {
+        merged.left = Math.min(merged.left, rect.left);
+        merged.top = Math.min(merged.top, rect.top);
+        merged.right = Math.max(merged.right, rect.right);
+        merged.bottom = Math.max(merged.bottom, rect.bottom);
+      } else {
+        lineRects.push({ ...rect });
+      }
+    }
+
+    cachedTextRects = lineRects.map((rect) => ({
+      left: rect.left - 5,
+      top: rect.top - 3,
+      right: rect.right + 5,
+      bottom: rect.bottom + 3
+    }));
+    return cachedTextRects;
+  }
+
+  function getSegmentRectInterval(start, end, rect) {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    let tMin = 0;
+    let tMax = 1;
+    const p = [-dx, dx, -dy, dy];
+    const q = [start.x - rect.left, rect.right - start.x, start.y - rect.top, rect.bottom - start.y];
+
+    for (let i = 0; i < 4; i += 1) {
+      if (p[i] === 0) {
+        if (q[i] < 0) {
+          return null;
+        }
+        continue;
+      }
+
+      const t = q[i] / p[i];
+      if (p[i] < 0) {
+        tMin = Math.max(tMin, t);
+      } else {
+        tMax = Math.min(tMax, t);
+      }
+      if (tMin > tMax) {
+        return null;
+      }
+    }
+
+    return [tMin, tMax];
+  }
+
+  function strokeSegmentOutsideText(start, end, textRects) {
+    const minX = Math.min(start.x, end.x);
+    const maxX = Math.max(start.x, end.x);
+    const minY = Math.min(start.y, end.y);
+    const maxY = Math.max(start.y, end.y);
+    const intervals = [];
+
+    for (const rect of textRects) {
+      if (rect.right < minX || rect.left > maxX || rect.bottom < minY || rect.top > maxY) {
+        continue;
+      }
+      const interval = getSegmentRectInterval(start, end, rect);
+      if (interval) {
+        intervals.push(interval);
+      }
+    }
+
+    intervals.sort((a, b) => a[0] - b[0]);
+    let cursor = 0;
+    let drewSegment = false;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    ctx.beginPath();
+
+    for (const interval of intervals) {
+      if (interval[0] > cursor) {
+        ctx.moveTo(start.x + dx * cursor, start.y + dy * cursor);
+        ctx.lineTo(start.x + dx * interval[0], start.y + dy * interval[0]);
+        drewSegment = true;
+      }
+      cursor = Math.max(cursor, interval[1]);
+      if (cursor >= 1) {
+        break;
+      }
+    }
+
+    if (cursor < 1) {
+      ctx.moveTo(start.x + dx * cursor, start.y + dy * cursor);
+      ctx.lineTo(end.x, end.y);
+      drewSegment = true;
+    }
+    if (drewSegment) {
+      ctx.stroke();
+    }
   }
 
   function isMiniGameArea(clientX, clientY, target) {
@@ -1052,11 +1209,12 @@ export function initBackgroundFx({
     return 0.24 + 0.76 * (0.5 + 0.5 * Math.sin(phase));
   }
 
-  function renderTraceAsTrail(points, ts, beatMs = null, lineRgb = GRAY_LINE) {
+  function renderTraceAsTrail(points, ts, beatMs = null, lineRgb = GRAY_LINE, breakUnderText = false) {
     if (!points || points.length === 0) {
       return;
     }
 
+    const textRects = breakUnderText ? getVisibleTextRects() : null;
     for (let i = 1; i < points.length; i += 1) {
       const prev = points[i - 1];
       const curr = points[i];
@@ -1069,10 +1227,14 @@ export function initBackgroundFx({
 
       ctx.strokeStyle = rgba(lineRgb, lineAlpha * 0.5);
       ctx.lineWidth = Math.max(0.6, ((prev.size + curr.size) * 0.38) * (0.35 + lineAlpha));
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(curr.x, curr.y);
-      ctx.stroke();
+      if (textRects) {
+        strokeSegmentOutsideText(prev, curr, textRects);
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(prev.x, prev.y);
+        ctx.lineTo(curr.x, curr.y);
+        ctx.stroke();
+      }
     }
 
     for (let i = 0; i < points.length; i += 1) {
@@ -1193,7 +1355,7 @@ export function initBackgroundFx({
       }
 
       const lineRgb = connection.isLengthMatch ? ACCENT_COLOR : GRAY_LINE;
-      renderTraceAsTrail(connection.trace, ts, connection.intervalMs, lineRgb);
+      renderTraceAsTrail(connection.trace, ts, connection.intervalMs, lineRgb, true);
     }
 
     if ((miniModeActive || secretZoneActive) && pendingTrace.length > 1) {
@@ -1861,6 +2023,9 @@ export function initBackgroundFx({
   }
 
   window.addEventListener("resize", resizeCanvas);
+  window.addEventListener("scroll", () => {
+    cachedTextRects = null;
+  }, { passive: true, capture: true });
   window.addEventListener("pointerrawupdate", onPointerMove, { passive: false });
   window.addEventListener("pointermove", onPointerMove, { passive: false });
   window.addEventListener("pointerdown", onPointerDown, { passive: false });
@@ -1902,6 +2067,23 @@ export function initBackgroundFx({
   }
 
   updateWordFont();
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      cachedTextRects = null;
+    });
+  }
+  if (typeof MutationObserver === "function" && document.body) {
+    const textLayoutObserver = new MutationObserver(() => {
+      cachedTextRects = null;
+    });
+    textLayoutObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class", "hidden", "style"],
+      characterData: true,
+      childList: true,
+      subtree: true
+    });
+  }
   observeWordSource();
   loadWordPool();
   updateSecretStatus();

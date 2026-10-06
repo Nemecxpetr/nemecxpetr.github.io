@@ -172,6 +172,8 @@ body.fx-click-hint .wrap {
 .section,
 .footer {
   width: 100%;
+  margin-top: 45px; 
+  margin-bottom: px;
 }
 
 .hero.hero-compact h1 {
@@ -201,7 +203,7 @@ body.fx-click-hint .wrap {
 
 .hero-summary {
   width: min(100%, 620px);
-  margin: 10px auto 0 auto;
+  margin: 20px auto 0 auto;
   font-size: clamp(14px, 1.9vw, 17px);
   line-height: 1.55;
   color: var(--muted);
