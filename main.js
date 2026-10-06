@@ -9,7 +9,7 @@ import {
   unlockAudioContext
 } from "./js/audio-pluck.js";
 
-const PORTFOLIO_PRINT_SOURCE_URL = "https://nemecxpetr.github.io/pjotrgerman.github.io/";
+const PORTFOLIO_PRINT_SOURCE_URL = "https://pjotrgerman.xyz/";
 
 /**
  * Main app bootstrap.

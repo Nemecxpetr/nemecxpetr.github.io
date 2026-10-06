@@ -20,7 +20,7 @@ import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
   const PREVIEW_SOURCE_GRAPH = "graph";
   const PREVIEW_SOURCE_TEXT = "text";
   const STICKY_PREVIEW_UNTIL_PRIMARY_CLICK = true;
-  const PRINT_SOURCE_URL = "https://nemecxpetr.github.io/pjotrgerman.github.io/articles/";
+  const PRINT_SOURCE_URL = "https://pjotrgerman.xyz/articles/";
   const SAMPLE_GAIN = 0.28;
   const SAMPLE_ATTACK_SEC = 0.02;
   const SAMPLE_FADE_SEC = 1.63;
@@ -493,6 +493,8 @@ import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
     const resolvedEyebrow = meta.eyebrow || "Unlisted Essay";
     const sourceUrl = new URL(PRINT_SOURCE_URL);
     sourceUrl.searchParams.set("article", articleKey);
+    document.documentElement.lang = meta.lang || "en";
+    document.title = `${resolvedTitle} — Petr Němec`;
     titleEl.textContent = resolvedTitle;
     subtitleEl.textContent = resolvedSubtitle;
     if (desktopTitleEl) {
