@@ -1,8 +1,33 @@
 [
-    {
+  { "date": "2026-12-09",
+    "dateEnd": null,
+    "title": "žabki",
+    "event": "Studio soudobé hudby",
+    "type": "video art",
+    "format": "screening",
+    "abstract": "short video art from spring 2026",
+    "artistRoles": ["video-artist", "sound-artist", "composer"],
+    "venue": "Komorní sál JAMU",
+    "city": "Brno",
+    "country": "Czech Republic"
+  },
+  {
+      "date": "2026-11-23",
+      "dateEnd": "2026-11-24",
+      "title": "Giants N.2",
+      "event": "Setkávání nové hudby plus - JA-HA-MU", 
+      "format": "music performance",
+      "type": "performance, live music, composition",
+      "abstract" : "Composition for 5 acoustic instruments and live electronics, composed for JA-HA-MU.",
+      "artistRoles": ["composer", "sound-artist", "live-electronics"],
+      "venue": "Komorní sál JAMU",
+      "city": "Brno",
+      "country": "Czech Republic"
+  },
+  {
     "date": "2026-11-28",
     "title": "",
-    "event": "SONDA - TRYCHTÝŘ",
+    "event": "SONDA - TRYCHTÝŘ (Divadlo na Orlí)",
     "type": "installation",
     "format": "sound installation",
     "artistRoles": ["sound-artist", "installation-artist", "sound-designer", "ligtht-designer"],
@@ -23,7 +48,7 @@
   {
     "date": "2026-11-07",
     "title": "",
-    "event": "SONDA - TRYCHTÝŘ",
+    "event": "SONDA - TRYCHTÝŘ (CO.LABS)",
     "type": "installation",
     "format": "sound installation",
     "artistRoles": ["sound-artist", "installation-artist", "sound-designer", "ligtht-designer"],
