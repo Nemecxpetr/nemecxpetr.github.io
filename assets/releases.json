@@ -1,4 +1,67 @@
 [
+    {
+    "date": "2026-11-28",
+    "title": "",
+    "event": "SONDA - TRYCHTÝŘ",
+    "type": "installation",
+    "format": "sound installation",
+    "artistRoles": ["sound-artist", "installation-artist", "sound-designer", "ligtht-designer"],
+    "venue": "Divadlo na Orlí",
+    "city": "Brno",
+    "country": "Czech Republic",
+    "collaborators": ["Sára Bočková"],
+    "abstract": "Sound installation for the SONDA festival as part of TRYCHTÝŘ.",
+    "links": {
+      "primary": {
+        "label": "Festival web",
+        "url": "https://sondafestival.com",
+        "platform": "website"
+      },
+      "secondary": []
+    }
+  },
+  {
+    "date": "2026-11-07",
+    "title": "",
+    "event": "SONDA - TRYCHTÝŘ",
+    "type": "installation",
+    "format": "sound installation",
+    "artistRoles": ["sound-artist", "installation-artist", "sound-designer", "ligtht-designer"],
+    "venue": "CO.LABS",
+    "city": "Brno",
+    "country": "Czech Republic",
+    "collaborators": ["Sára Bočková"],
+    "abstract": "Sound installation for the SONDA festival as part of TRYCHTÝŘ.",
+    "links": {
+      "primary": {
+        "label": "Festival web",
+        "url": "https://sondafestival.com",
+        "platform": "website"
+      },
+      "secondary": []
+    }
+  },
+  {
+    "date": "2026-10-20",
+    "title": "Hunger Artist",
+    "event": "",
+    "type": "dance performance",
+    "format":"choreography & live set",
+    "artistRoles": ["composer", "sound-artist", "live-electronics"],
+    "venue": "Divadlo na Orlí",
+    "city": "Brno",
+    "country": "Czech Republic",
+    "collaborators": ["Vladena Klimek"],
+    "abstract": "Sound design for a dance performance based on the story by Franz Kafka.",
+    "links": {
+      "primary": {
+        "label": "Portfolio",
+        "url": "index.html#work-hunger-artist",
+        "platform": "portfolio"
+      },
+      "secondary": []
+    }
+  },
   {
     "date": "2026-08-21",
     "title": "Tunneloflove25",
