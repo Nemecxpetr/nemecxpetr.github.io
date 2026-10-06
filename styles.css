@@ -18,6 +18,7 @@
   --release-col-width: 160px;
   --release-col-bg: rgba(0, 0, 0, 0.02);
   --release-col-hover: rgba(0, 0, 0, 0.08);
+  --interactive-hover-color: #174f83;
 
   /* drawing preview opacity (set to 0 if you want it invisible) */
   --mask-opacity: 0;
@@ -34,6 +35,7 @@
     --mask-opacity: 0;
     --release-col-bg: rgba(255, 255, 255, 0.04);
     --release-col-hover: rgba(255, 255, 255, 0.10);
+    --interactive-hover-color: #83d6ff;
   }
 }
 
@@ -48,6 +50,7 @@ body.print-theme-light {
   --shadow: rgba(0, 0, 0, 0.08);
   --release-col-bg: rgba(0, 0, 0, 0.02);
   --release-col-hover: rgba(0, 0, 0, 0.08);
+  --interactive-hover-color: #174f83;
 }
 
 html.print-theme-dark,
@@ -61,6 +64,7 @@ body.print-theme-dark {
   --shadow: rgba(0, 0, 0, 0.40);
   --release-col-bg: rgba(255, 255, 255, 0.04);
   --release-col-hover: rgba(255, 255, 255, 0.10);
+  --interactive-hover-color: #83d6ff;
 }
 
 /* =========
@@ -89,7 +93,16 @@ a {
   text-decoration: none;
   border-bottom: 1px solid var(--hairline);
 }
-a:hover { border-bottom-color: currentColor; }
+a:hover {
+  color: var(--interactive-hover-color);
+  border-bottom-color: currentColor;
+}
+
+button:hover,
+[role="button"]:hover,
+.btn:hover {
+  color: var(--interactive-hover-color);
+}
 
 h1, h2, h3 { margin: 0 0 0.5rem 0; line-height: 1.12; }
 p { margin: 0; color: var(--muted); }
@@ -228,7 +241,7 @@ body.fx-click-hint .wrap {
 }
 
 .hero-structure-link:hover {
-  color: var(--fg);
+  color: var(--interactive-hover-color);
   border-bottom-color: currentColor;
 }
 
@@ -687,7 +700,7 @@ body[data-release-page="true"].print-mode .release-secondary-action {
 }
 
 .release-secondary-action:hover {
-  color: var(--fg);
+  color: var(--interactive-hover-color);
   border-bottom-color: currentColor;
 }
 
@@ -769,11 +782,37 @@ body[data-release-page="true"].print-mode .release-secondary-action {
 }
 
 .press-downloads {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.press-downloads-individual,
+.press-downloads-package {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 10px;
+}
+
+.press-downloads-package {
+  flex-direction: column;
+  gap: 0;
+}
+
+.press-downloads-brace {
+  display: block;
+  font-size: 5.5rem;
+  font-weight: 700;
+  line-height: 0.72;
+  transform: rotate(90deg);
+}
+
+@media (max-width: 480px) {
+  .press-downloads-individual {
+    flex-wrap: wrap;
+  }
 }
 
 .release-card-link {
@@ -966,6 +1005,7 @@ body[data-release-page="true"].print-mode .release-secondary-action {
 }
 
 .highlight-card .btn:hover {
+  color: var(--interactive-hover-color);
   border-color: transparent;
   filter: brightness(1.05);
 }
