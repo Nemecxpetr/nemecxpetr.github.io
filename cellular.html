@@ -106,10 +106,19 @@ function placeGlider(x, y) {
 
 const sliders = {};
 const params = { birth_lo: 3, birth_hi: 5, surv_lo: 2, surv_hi: 2, noise: 0.2, rate: 12.66 };
+const limits = {                // [min, max] per parameter
+  birth_lo: [0, 8], birth_hi: [0, 8],
+  surv_lo:  [0, 8], surv_hi:  [0, 8],
+  noise: [0, 1], rate: [0.1, 120],
+};
 
 function setParam(name, v) {
-  if (name in params) { params[name] = v; showParams(); }
+  if (!(name in params)) return;
+  const [lo, hi] = limits[name];
+  params[name] = Math.min(hi, Math.max(lo, v));
+  showParams();
 }
+
 
 const info = document.createElement('pre');
 info.style.cssText = 'position:fixed;top:4px;right:8px;color:#8f8;margin:0;font:12px monospace';
