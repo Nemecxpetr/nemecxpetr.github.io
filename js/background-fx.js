@@ -1209,7 +1209,7 @@ export function initBackgroundFx({
     return 0.24 + 0.76 * (0.5 + 0.5 * Math.sin(phase));
   }
 
-  function renderTraceAsTrail(points, ts, beatMs = null, lineRgb = GRAY_LINE, breakUnderText = false) {
+  function renderTraceAsTrail(points, ts, beatMs = null, lineRgb = GRAY_LINE, breakUnderText = true) {
     if (!points || points.length === 0) {
       return;
     }
@@ -1362,6 +1362,7 @@ export function initBackgroundFx({
       renderTraceAsTrail(pendingTrace, ts);
     }
 
+    const textRects = getVisibleTextRects();
     for (let i = 1; i < trail.length; i += 1) {
       const prev = trail[i - 1];
       const curr = trail[i];
@@ -1375,10 +1376,7 @@ export function initBackgroundFx({
 
       ctx.strokeStyle = rgba(GRAY_LINE, lineAlpha * 0.5);
       ctx.lineWidth = Math.max(0.6, ((prev.size + curr.size) * 0.38) * (0.35 + lineAlpha));
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(curr.x, curr.y);
-      ctx.stroke();
+      strokeSegmentOutsideText(prev, curr, textRects);
     }
 
     for (let i = 0; i < trail.length; i += 1) {

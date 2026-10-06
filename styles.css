@@ -803,8 +803,8 @@ body[data-release-page="true"].print-mode .release-secondary-action {
 
 .press-downloads-brace {
   display: block;
-  font-size: 5.5rem;
-  font-weight: 700;
+  font-size: 12rem;
+  font-weight: 400;
   line-height: 0.72;
   transform: rotate(90deg);
 }
