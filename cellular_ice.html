@@ -66,7 +66,7 @@ cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); pai
 cv.addEventListener('pointermove', e => { if (e.buttons) paint(e); });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 
-randomize(0.3); draw();
+placeIceSeed(); draw();
 
 
 let running = true, acc = 0, last = performance.now();
