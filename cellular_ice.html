@@ -3,18 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Interactive cellular automaton with adjustable rules and controls." />
-  <meta property="og:title" content="Cellular — Petr Němec">
-  <meta property="og:description" content="Interactive cellular automaton with adjustable rules and controls.">
+  <meta name="description" content="Interactive cellular automaton with a liquid/ice freeze-melt state. Work in progress." />
+  <meta property="og:title" content="Cellular Ice — Petr Němec">
+  <meta property="og:description" content="Interactive cellular automaton with a liquid/ice freeze-melt state. Work in progress.">
   <meta property="og:image" content="https://pjotrgerman.xyz/assets/preview.jpg">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://pjotrgerman.xyz/cellular.html">
-  <title>Cellular Automaton — Petr Němec</title>
+  <meta property="og:url" content="https://pjotrgerman.xyz/cellular_ice.html">
+  <title>Cellular Ice (WIP) — Petr Němec</title>
   <link rel="icon" type="image/png" href="favicon_1.png" />
 </head>
 <body style="margin:0;background:#000">
 <canvas id="cv"></canvas>
 <script>
+// States: 0 empty, 1 liquid, 2 ice. Grid values are states, not alive/dead.
 const CELL = 12;                                   // target pixels per cell
 const W = Math.floor(innerWidth / CELL);
 const H = Math.floor(innerHeight / CELL);
@@ -29,23 +30,25 @@ function fit() {
   cv.style.width  = W * scale + 'px';
   cv.style.height = H * scale + 'px';
 }
-cv.width = W; cv.height = H;          // internal resolution = number of cells
 cv.style.imageRendering = 'pixelated';
 cv.style.display = 'block';
 fit();
 addEventListener('resize', fit);
 
-let grid = new Uint8Array(W * H);   // cell (x,y) lives at index y*W + x
+const EMPTY = 0, LIQUID = 1, ICE = 2;
+const COLORS = [[0, 0, 0], [40, 110, 255], [215, 238, 255]];   // indexed by state
+
+let grid = new Uint8Array(W * H);   // cell (x,y) lives at index y*W + x, value is its state
 
 function randomize(density) {
-  for (let i = 0; i < grid.length; i++) grid[i] = Math.random() < density ? 1 : 0;
+  for (let i = 0; i < grid.length; i++) grid[i] = Math.random() < density ? LIQUID : EMPTY;
 }
 
 function draw() {
   const img = ctx.createImageData(W, H);
   for (let i = 0; i < grid.length; i++) {
-    const v = grid[i] * 255;
-    img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+    const [r, g, b] = COLORS[grid[i]];
+    img.data[i * 4] = r; img.data[i * 4 + 1] = g; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
 }
@@ -54,11 +57,14 @@ function paint(e) {
   const r = cv.getBoundingClientRect();
   const x = Math.floor((e.clientX - r.left) / r.width * W);
   const y = Math.floor((e.clientY - r.top) / r.height * H);
-  if (x >= 0 && x < W && y >= 0 && y < H) grid[y * W + x] = 1;
+  if (x < 0 || x >= W || y < 0 || y >= H) return;
+  const erase = (e.buttons & 2) === 2 || e.button === 2;
+  grid[y * W + x] = erase ? EMPTY : e.shiftKey ? ICE : LIQUID;
   draw();
 }
 cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); paint(e); });
 cv.addEventListener('pointermove', e => { if (e.buttons) paint(e); });
+cv.addEventListener('contextmenu', e => e.preventDefault());
 
 randomize(0.3); draw();
 
@@ -78,61 +84,83 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 addEventListener('keydown', e => {
+  if (['TEXTAREA', 'INPUT'].includes(e.target.tagName)) return;
   if (e.code === 'Space') running = !running;
   if (e.key === 's') { grid = update(grid); draw(); }       // single step
   if (e.key === 'ArrowUp')   { params.rate *= 1.25; showParams(); }
   if (e.key === 'ArrowDown') { params.rate /= 1.25; showParams(); }
 
   const k = keys[e.key];
-
-  if (k) setParam(k[0], Math.max(0, +(params[k[0]] + k[1]).toFixed(3)));
+  if (k) setParam(k[0], clampParam(k[0], +(params[k[0]] + k[1]).toFixed(3)));
 });
 
-function countNeighbours(g, x, y) {
-  let n = 0;
+// Tally of each state among the 8 neighbours of (x,y). Counting matching
+// states (not summing raw values) is what makes this work once a cell can
+// be more than 0 or 1 -- see the old countNeighbours() in index.html, which
+// summed values and would break here.
+function neighbourCounts(g, x, y) {
+  const counts = [0, 0, 0];
   for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
     if (dx === 0 && dy === 0) continue;
-    n += g[((y + dy + H) % H) * W + (x + dx + W) % W];   // wraps at the edges
+    counts[g[((y + dy + H) % H) * W + (x + dx + W) % W]]++;
   }
-  return n;
+  return counts;
 }
 
 function update(g) {
   const next = new Uint8Array(W * H);     // NEW array: never write into g
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = y * W + x, n = countNeighbours(g, x, y);
-    // TODO: set next[i] from g[i] (is the cell alive?) and n
-    const alive = g[i] === 1;
-    let v;
-    v = (alive && n >= params.surv_lo && n <= params.surv_hi)
-    || (!alive && n >= params.birth_lo && n <= params.birth_hi)
-    ? 1
-    : 0;
+    const i = y * W + x, s = g[i];
+    const [, nLiquid, nIce] = neighbourCounts(g, x, y);
+    const nOccupied = nLiquid + nIce;      // liquid or ice both count as "occupied", like the old alive/dead count
 
-    params.noise > 0 && Math.random() < params.noise && (v = 1 - v);   // flip with some probability
-    next[i] = v;
+    let next_s = s;
+    if (s === EMPTY) {
+      if (nLiquid >= params.birth_lo && nLiquid <= params.birth_hi) next_s = LIQUID;
+    } else if (s === LIQUID) {
+      if (nOccupied < params.surv_lo || nOccupied > params.surv_hi) next_s = EMPTY;
+      else if (nIce >= params.freeze_nb && Math.random() < params.freeze) next_s = ICE;
+    } else {   // s === ICE
+      if (nLiquid >= params.melt_nb && Math.random() < params.melt) next_s = LIQUID;
+    }
+
+    if (Math.random() < params.noise) {                 // pick a different state at random
+      const others = [EMPTY, LIQUID, ICE].filter(v => v !== next_s);
+      next_s = others[Math.floor(Math.random() * others.length)];
+    }
+    next[i] = next_s;
   }
   return next;
 }
 
-function placeGlider(x, y) {
-  grid.fill(0);
-  for (const [dx, dy] of [[1,0],[2,1],[0,2],[1,2],[2,2]]) grid[(y + dy) * W + x + dx] = 1;
+function placeIceSeed(size = 10) {
+  const x0 = (W - size) >> 1, y0 = (H - size) >> 1;
+  for (let y = y0; y < y0 + size; y++) for (let x = x0; x < x0 + size; x++)
+    grid[((y + H) % H) * W + (x + W) % W] = ICE;
 }
 
 const sliders = {};
-const params = { birth_lo: 3, birth_hi: 5, surv_lo: 2, surv_hi: 2, noise: 0.2, rate: 12.66 };
-const limits = {                // [min, max] per parameter
-  birth_lo: [0, 8], birth_hi: [0, 8],
-  surv_lo:  [0, 8], surv_hi:  [0, 8],
-  noise: [0, 1], rate: [0.1, 120],
+const params = {
+  birth_lo: 3, birth_hi: 5, surv_lo: 2, surv_hi: 2,
+  freeze: 0.3, freeze_nb: 3, melt: 0.05, melt_nb: 5,
+  noise: 0.02, rate: 12.66,
 };
 
+const ranges = {                       // [min, max, step]
+  birth_lo: [0, 8, 1], birth_hi: [0, 8, 1],
+  surv_lo:  [0, 8, 1], surv_hi:  [0, 8, 1],
+  freeze: [0, 1, 0.01], freeze_nb: [0, 8, 1],
+  melt:   [0, 1, 0.01], melt_nb:   [0, 8, 1],
+  noise: [0, 0.2, 0.001], rate: [1, 60, 0.5],
+};
+
+function clampParam(name, v) {
+  const [min, max] = ranges[name] || [0, Infinity];
+  return Math.max(min, Math.min(max, v));
+}
+
 function setParam(name, v) {
-  if (!(name in params)) return;
-  const [lo, hi] = limits[name];
-  params[name] = Math.min(hi, Math.max(lo, v));
-  showParams();
+  if (name in params) { params[name] = v; showParams(); }
 }
 
 const info = document.createElement('pre');
@@ -166,7 +194,11 @@ function buildLegend() {
     by[name][delta < 0 ? 'dec' : 'inc'] = key;
   }
   const lines = Object.entries(by).map(([name, k]) => `${k.dec} / ${k.inc}   ${name}`);
-  lines.push('up / down   rate', 'space   pause', 's   step', 'l   hide legend');
+  lines.push(
+    'up / down   rate', 'space   pause', 's   step', 'l   hide legend',
+    'drag   paint liquid', 'shift+drag   paint ice', 'right-drag   erase',
+    'freeze / melt: see controls panel'
+  );
   legend.textContent = lines.join('\n');
 }
 buildLegend();
@@ -175,15 +207,9 @@ addEventListener('keydown', e => {
   if (e.key === 'l') legend.style.display = legend.style.display === 'none' ? '' : 'none';
 });
 
-const ranges = {                       // [min, max, step]
-  birth_lo: [0, 8, 1], birth_hi: [0, 8, 1],
-  surv_lo:  [0, 8, 1], surv_hi:  [0, 8, 1],
-  noise: [0, 1, 0.01], rate: [1, 60, 0.5],
-};
-
 const panel = document.createElement('div');
 panel.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#000d;padding:8px 12px;' +
-                      'font:13px monospace;color:#8f8;display:none';
+                      'font:13px monospace;color:#8f8;display:none;max-height:70vh;overflow-y:auto';
 document.body.appendChild(panel);
 
 for (const k in ranges) {
@@ -212,6 +238,7 @@ addButton('pause / run', () => { running = !running; });
 addButton('step',        () => { grid = update(grid); draw(); });
 addButton('random',      () => { randomize(0.3); draw(); });
 addButton('clear',       () => { grid.fill(0); draw(); });
+addButton('ice seed',    () => { placeIceSeed(); draw(); });
 
 const toggle = addButton('controls', () => {
   panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
