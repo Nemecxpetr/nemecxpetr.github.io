@@ -98,10 +98,14 @@ function update(g) {
     const i = y * W + x, n = countNeighbours(g, x, y);
     // TODO: set next[i] from g[i] (is the cell alive?) and n
     const alive = g[i] === 1;
-    next[i] = (alive && n >= params.surv_lo && n <= params.surv_hi) 
-    || (!alive && n >= params.birth_lo && n <= params.birth_hi) 
-    ? 1 
+    let v;
+    v = (alive && n >= params.surv_lo && n <= params.surv_hi)
+    || (!alive && n >= params.birth_lo && n <= params.birth_hi)
+    ? 1
     : 0;
+
+    params.noise > 0 && Math.random() < params.noise && (v = 1 - v);   // flip with some probability
+    next[i] = v;
   }
   return next;
 }
@@ -125,7 +129,6 @@ function setParam(name, v) {
   params[name] = Math.min(hi, Math.max(lo, v));
   showParams();
 }
-
 
 const info = document.createElement('pre');
 info.style.cssText = 'position:fixed;top:4px;right:8px;color:#8f8;margin:0;font:12px monospace';
