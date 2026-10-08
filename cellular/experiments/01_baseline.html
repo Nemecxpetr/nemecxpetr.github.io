@@ -3,14 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Interactive cellular automaton with adjustable rules and controls." />
-  <meta property="og:title" content="Cellular — Petr Němec">
-  <meta property="og:description" content="Interactive cellular automaton with adjustable rules and controls.">
-  <meta property="og:image" content="https://pjotrgerman.xyz/assets/preview.jpg">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://pjotrgerman.xyz/cellular.html">
-  <title>Cellular Automaton — Petr Němec</title>
-  <link rel="icon" type="image/png" href="favicon_1.png" />
+  <title>Lesson 01 · Baseline — Water / Words / Memory</title>
+  <link rel="icon" type="image/png" href="../../favicon_1.png" />
+  <meta name="robots" content="noindex" />
 </head>
 <body style="margin:0;background:#000">
 <canvas id="cv"></canvas>
@@ -101,7 +96,6 @@ function update(g) {
   const next = new Uint8Array(W * H);     // NEW array: never write into g
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x, n = countNeighbours(g, x, y);
-    // TODO: set next[i] from g[i] (is the cell alive?) and n
     const alive = g[i] === 1;
     let v;
     v = (alive && n >= params.surv_lo && n <= params.surv_hi)
@@ -112,6 +106,7 @@ function update(g) {
     params.noise > 0 && Math.random() < params.noise && (v = 1 - v);   // flip with some probability
     next[i] = v;
   }
+  
   return next;
 }
 
@@ -122,15 +117,10 @@ function placeGlider(x, y) {
 
 const sliders = {};
 const params = { birth_lo: 3, birth_hi: 5, surv_lo: 2, surv_hi: 2, noise: 0.2, rate: 12.66 };
-const limits = {                // [min, max] per parameter
-  birth_lo: [0, 8], birth_hi: [0, 8],
-  surv_lo:  [0, 8], surv_hi:  [0, 8],
-  noise: [0, 1], rate: [0.1, 120],
-};
 
 function setParam(name, v) {
   if (!(name in params)) return;
-  const [lo, hi] = limits[name];
+  const [lo, hi] = ranges[name];          // same bounds the slider uses -- one source of truth
   params[name] = Math.min(hi, Math.max(lo, v));
   showParams();
 }
@@ -178,7 +168,7 @@ addEventListener('keydown', e => {
 const ranges = {                       // [min, max, step]
   birth_lo: [0, 8, 1], birth_hi: [0, 8, 1],
   surv_lo:  [0, 8, 1], surv_hi:  [0, 8, 1],
-  noise: [0, 1, 0.01], rate: [1, 60, 0.5],
+  noise: [0, 0.2, 0.001], rate: [1, 60, 0.5],
 };
 
 const panel = document.createElement('div');

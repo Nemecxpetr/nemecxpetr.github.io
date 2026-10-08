@@ -1165,74 +1165,6 @@ body[data-release-page="true"].print-mode .release-secondary-action {
   transform: translateX(5px);
 }
 
-.playground-game-group {
-  border-bottom: 1px solid var(--hairline);
-}
-
-.playground-game-group > summary {
-  border-bottom: 0;
-  cursor: pointer;
-  list-style: none;
-}
-
-.playground-game-group > summary::-webkit-details-marker {
-  display: none;
-}
-
-.playground-game-group > summary > i {
-  transition: transform 160ms ease;
-}
-
-.playground-game-group[open] > summary > i {
-  transform: rotate(180deg);
-}
-
-.playground-game-sublist {
-  display: grid;
-  padding-bottom: 8px;
-}
-
-.playground-game-sublink {
-  display: grid;
-  grid-template-columns: 1fr 32px;
-  align-items: center;
-  gap: 16px;
-  min-height: 64px;
-  padding-left: 56px;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.playground-game-sublink:hover,
-.playground-game-sublink:focus-visible {
-  color: var(--fg);
-}
-
-.playground-game-wip {
-  margin-left: 8px;
-  padding: 2px 6px;
-  border: 1px solid var(--hairline);
-  border-radius: 4px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  vertical-align: middle;
-}
-
-.playground-game-sublink > i {
-  justify-self: end;
-  color: #e65d32;
-  font-size: 16px;
-  transition: transform 160ms ease;
-}
-
-.playground-game-sublink:hover > i,
-.playground-game-sublink:focus-visible > i {
-  transform: translateX(5px);
-}
-
 @media (max-width: 520px) {
   .playground-menu h2 {
     font-size: 32px;
@@ -1243,14 +1175,6 @@ body[data-release-page="true"].print-mode .release-secondary-action {
     gap: 12px;
     min-height: 92px;
     font-size: 26px;
-  }
-
-  .playground-game-sublink {
-    grid-template-columns: 1fr 24px;
-    gap: 12px;
-    min-height: 56px;
-    padding-left: 36px;
-    font-size: 18px;
   }
 }
 

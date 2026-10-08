@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Water / Words / Memory — an interactive series of cellular-automaton and generative-poetry lessons, from a binary CA to word-hosting particles." />
+  <meta property="og:title" content="Water / Words / Memory — Petr Němec">
+  <meta property="og:description" content="Water / Words / Memory — an interactive series of cellular-automaton and generative-poetry lessons, from a binary CA to word-hosting particles.">
+  <meta property="og:image" content="https://pjotrgerman.xyz/assets/preview.jpg">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pjotrgerman.xyz/cellular/">
+  <title>Water / Words / Memory — Petr Němec</title>
+  <link rel="icon" type="image/png" href="../favicon_1.png" />
+<style>
+  * { box-sizing: border-box; }
+  #stage { position: fixed; inset: 0; z-index: 0; }
+  #stage iframe {
+    position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+    pointer-events: none; opacity: 0; transition: opacity .5s ease;
+  }
+  #stage iframe.active { opacity: .55; }
+  #scrim {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: linear-gradient(90deg, #000 0%, #000c 32%, #0000 72%);
+  }
+  #menu { position: relative; z-index: 2; max-width: 640px; padding: 48px 32px 64px; }
+  h1 { margin: 0 0 4px; font-size: 20px; letter-spacing: .08em; color: #cfc; }
+  h1 + p { margin: 0 0 36px; color: #6a6; }
+  .card {
+    display: block; width: 100%; text-align: left; background: #0008; color: #8f8;
+    border: 1px solid #353; border-radius: 6px; padding: 14px 18px; margin: 0 0 10px;
+    font: inherit; cursor: pointer; transition: background .2s, border-color .2s, transform .2s;
+  }
+  .card:hover, .card:focus-visible { background: rgba(17, 51, 17, 0.418); border-color: #6c6; transform: translateX(4px); }
+  .card .tag { color: #5a5; font-size: 12px; letter-spacing: .05em; }
+  .card .title { display: block; color: #cfc; font-size: 16px; margin: 2px 0 4px; }
+  .card .blurb { display: block; color: #8c8; font-size: 12.5px; line-height: 1.5; }
+  .bonus { margin-top: 24px; border-color: #553; }
+  .bonus .title { color: #ec9; }
+  .bonus .tag { color: #a85; }
+  .bonus:hover, .bonus:focus-visible { background: #221100a2; border-color: #c96; }
+  @media (max-width: 560px) {
+    #scrim { background: #000c; }
+    #menu { padding: 32px 20px 48px; max-width: none; }
+  }
+</style>
+</head>
+<body style="margin:0;background:#000;color:#8f8;font:14px monospace;overflow-x:hidden">
+
+<div id="stage"></div>
+<div id="scrim"></div>
+
+<div id="menu">
+  <h1>WATER / WORDS / MEMORY</h1>
+  <p>cellular automata &amp; generative poetry — hover a lesson to see where it starts</p>
+  <div id="list"></div>
+</div>
+
+<script>
+const lessons = [
+  { n: '01', title: 'Baseline',          file: 'experiments/01_baseline.html',
+    blurb: 'Binary cellular automaton: birth/survival windows, noise, pause/step/randomise.' },
+  { n: '02', title: 'Multistate',        file: 'experiments/02_multistate.html',
+    blurb: 'Liquid and ice: separate freeze/melt rules replace the single birth/survival rule.' },
+  { n: '03', title: 'Phase',             file: 'experiments/03_phase.html',
+    blurb: 'One continuous slider blends every parameter between frozen and liquid presets.' },
+  { n: '04', title: 'Interacting grids', file: 'experiments/04_interacting_grids.html',
+    blurb: 'A diffusing temperature field modulates freeze/melt probability locally.' },
+  { n: '05', title: 'Particles',         file: 'experiments/05_particles.html',
+    blurb: 'Continuous position and velocity — particles move off the grid, in real time.' },
+  { n: '06', title: 'Poem',              file: 'experiments/06_poem.html',
+    blurb: 'Particles host words; a 1D automaton decides which words are visible.' },
+];
+const bonus = { n: 'ex4', title: 'Exercise 4', file: 'experiments/exercise4.html',
+  blurb: 'A separate, more advanced sketch — vector "gene" automaton with history scrubbing and direction-as-hue trails.' };
+
+const stage = document.getElementById('stage');
+const list = document.getElementById('list');
+const frames = new Map();
+
+function frameFor(entry) {
+  let f = frames.get(entry.file);
+  if (!f) {
+    f = document.createElement('iframe');
+    f.loading = 'lazy';
+    f.tabIndex = -1;
+    f.setAttribute('aria-hidden', 'true');
+    stage.appendChild(f);
+    frames.set(entry.file, f);
+  }
+  return f;
+}
+
+function show(entry) {
+  const f = frameFor(entry);
+  if (!f.src) f.src = entry.file;
+  for (const other of frames.values()) other.classList.toggle('active', other === f);
+}
+
+function hideAll() {
+  for (const f of frames.values()) f.classList.remove('active');
+}
+
+function makeCard(entry, extraClass) {
+  const b = document.createElement('button');
+  b.className = 'card' + (extraClass ? ' ' + extraClass : '');
+  b.innerHTML =
+    `<span class="tag">${extraClass ? 'bonus' : 'lesson'} ${entry.n}</span>` +
+    `<span class="title">${entry.title}</span>` +
+    `<span class="blurb">${entry.blurb}</span>`;
+  b.addEventListener('pointerenter', () => show(entry));
+  b.addEventListener('focus', () => show(entry));
+  b.addEventListener('pointerleave', hideAll);
+  b.addEventListener('blur', hideAll);
+  b.addEventListener('click', () => { location.href = entry.file; });
+  return b;
+}
+
+for (const entry of lessons) list.appendChild(makeCard(entry));
+list.appendChild(makeCard(bonus, 'bonus'));
+</script>
+</body></html>

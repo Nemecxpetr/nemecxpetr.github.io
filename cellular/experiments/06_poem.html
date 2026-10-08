@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lesson 06 · Poem — Water / Words / Memory</title>
+  <link rel="icon" type="image/png" href="../../favicon_1.png" />
+  <meta name="robots" content="noindex" />
+</head>
+<body style="margin:0;background:#000">
+<canvas id="cv"></canvas>
+<script src="poem.js"></script>
+<script>
+// Particles (from Lesson 5, temp field dropped to keep focus) where some
+// particles HOST a word from the currently active paragraph instead of just
+// being a dot. Three things decide what's on screen:
+//
+// 1. `phase` picks which paragraph is active -- a coarse, stepped choice on
+//    purpose (there are only a few paragraphs; unlike Lesson 3's thresholds,
+//    there's no finer-grained value to glide between).
+// 2. A small 1D cellular automaton decides which words IN that paragraph are
+//    currently visible. Same idea as Lesson 1/2's birth/survival rule, just
+//    along a line of words (left/right neighbours, wrapping) instead of a
+//    2D grid of cells -- a word is more likely to be alive if its neighbours
+//    are alive, biased by `wbase`/`wspread`, which `phase` blends like every
+//    other parameter so far.
+// 3. Thin lines connect each visible word to its 2 nearest other visible
+//    words, redrawn every frame from their current (moving) positions.
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+cv.style.display = 'block';
+cv.style.touchAction = 'none';
+function fit() { cv.width = innerWidth; cv.height = innerHeight; }
+fit();
+addEventListener('resize', fit);
+
+// --- the poem, parsed -------------------------------------------------------
+// Blank-line-separated paragraphs, each split into words. POEM comes from
+// poem.js, loaded before this script -- edit that file, not this one.
+function parsePoem(text) {
+  return text.trim().split(/\n\s*\n/).map(p => p.trim().split(/\s+/));
+}
+const paragraphs = parsePoem(POEM);
+
+// --- particles ---------------------------------------------------------------
+// N is large enough to host the longest paragraph, plus some spare particles
+// that just drift as plain dots -- texture, not text.
+const N = Math.max(...paragraphs.map(p => p.length), 24);
+const px = new Float32Array(N), py = new Float32Array(N);
+const vx = new Float32Array(N), vy = new Float32Array(N);
+function scatterParticles() {
+  for (let i = 0; i < N; i++) {
+    px[i] = Math.random() * cv.width; py[i] = Math.random() * cv.height;
+    vx[i] = (Math.random() * 2 - 1) * 20; vy[i] = (Math.random() * 2 - 1) * 20;
+  }
+}
+scatterParticles();
+
+function stepParticles(dt) {
+  const d = Math.pow(params.drag, dt);
+  const cx = cv.width / 2, cy = cv.height / 2;
+  for (let i = 0; i < N; i++) {
+    vx[i] += (Math.random() * 2 - 1) * params.jitter * dt;
+    vy[i] += (Math.random() * 2 - 1) * params.jitter * dt;
+    if (i < M) {   // only particles currently hosting a word get pulled toward the centre
+      vx[i] += (cx - px[i]) * params.pull * dt;
+      vy[i] += (cy - py[i]) * params.pull * dt;
+    }
+    vx[i] *= d; vy[i] *= d;
+    const sp = Math.hypot(vx[i], vy[i]);
+    if (sp > params.speed) { const k = params.speed / sp; vx[i] *= k; vy[i] *= k; }
+    px[i] += vx[i] * dt; py[i] += vy[i] * dt;
+    if (px[i] < 0) px[i] += cv.width; else if (px[i] >= cv.width) px[i] -= cv.width;
+    if (py[i] < 0) py[i] += cv.height; else if (py[i] >= cv.height) py[i] -= cv.height;
+  }
+}
+
+// --- keep word-hosting particles from overlapping (2D-only) -----------------
+// In 3D, two words at different depths just wouldn't visually collide at the
+// same (x, y) -- depth would separate them for free. There's no such axis
+// here, so overlap has to be resolved explicitly: treat each visible word as
+// a text-sized box and push overlapping pairs apart along whichever axis
+// needs the smaller correction (standard AABB separation).
+function resolveWordCollisions() {
+  if (M < 2) return;
+  const fontPx = 10 + params.size * 3;
+  ctx.font = `${fontPx}px Arial, Helvetica, sans-serif`;   // must match draw()'s font exactly, or measureText lies
+  const pad = 6;
+  const halfH = fontPx / 2 + pad;
+  const halfW = new Float32Array(M);
+  for (let i = 0; i < M; i++) halfW[i] = ctx.measureText(paragraphs[activeIdx][i]).width / 2 + pad;
+
+  for (let pass = 0; pass < 2; pass++) {       // a couple of passes resolves most chains of overlaps in one frame
+    for (let i = 0; i < M; i++) {
+      if (wordAlpha[i] < 0.05) continue;        // don't bother separating words nobody can see yet
+      for (let j = i + 1; j < M; j++) {
+        if (wordAlpha[j] < 0.05) continue;
+        const dx = px[j] - px[i], dy = py[j] - py[i];
+        const overlapX = halfW[i] + halfW[j] - Math.abs(dx);
+        const overlapY = halfH + halfH - Math.abs(dy);
+        if (overlapX <= 0 || overlapY <= 0) continue;    // boxes don't actually overlap
+        if (overlapX < overlapY) {
+          const push = (overlapX / 2) * (dx < 0 ? -1 : 1);
+          px[i] -= push; px[j] += push;
+        } else {
+          const push = (overlapY / 2) * (dy < 0 ? -1 : 1);
+          py[i] -= push; py[j] += push;
+        }
+      }
+    }
+  }
+}
+
+// --- which paragraph is active, and its word-automaton ----------------------
+// wordState/wordAlpha are fixed at length N so paragraph changes never
+// resize anything -- only indices 0..M-1 (M = current paragraph's word
+// count) are driven by the automaton; the rest stay at 0 and render as
+// plain dots. wordAlpha eases toward wordState each frame instead of
+// snapping, so flicker reads as a fade, not a pop.
+let activeIdx = -1, M = 0;
+const wordState = new Uint8Array(N);
+const wordAlpha = new Float32Array(N);
+
+function stepWordAutomaton() {
+  const next = new Uint8Array(N);
+  for (let i = 0; i < M; i++) {
+    const left = wordState[(i - 1 + M) % M], right = wordState[(i + 1) % M];
+    const nb = left + right;                      // 0, 1, or 2 alive neighbours, wrapping within THIS paragraph
+    const pAlive = params.wbase + params.wspread * (nb / 2);
+    next[i] = Math.random() < pAlive ? 1 : 0;
+  }
+  wordState.set(next);
+}
+
+function updateActiveParagraph() {
+  const idx = Math.min(paragraphs.length - 1, Math.floor(phase * paragraphs.length));
+  if (idx === activeIdx) return;
+  activeIdx = idx;
+  M = paragraphs[idx].length;
+  wordState.fill(0);     // fresh paragraph starts from silence, the automaton has to "decide" to light words up
+}
+
+// --- drawing ------------------------------------------------------------------
+function draw() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  const alive = [];
+  for (let i = 0; i < M; i++) if (wordAlpha[i] > 0.05) alive.push(i);
+
+  ctx.strokeStyle = 'rgba(140, 200, 255, 0.18)';
+  ctx.lineWidth = 1;
+  for (const i of alive) {
+    const dists = alive.filter(j => j !== i).map(j => [(px[i]-px[j])**2 + (py[i]-py[j])**2, j]).sort((a, b) => a[0] - b[0]);
+    for (let k = 0; k < Math.min(2, dists.length); k++) {
+      const j = dists[k][1];
+      ctx.beginPath(); ctx.moveTo(px[i], py[i]); ctx.lineTo(px[j], py[j]); ctx.stroke();
+    }
+  }
+
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let i = 0; i < N; i++) {
+    if (i < M && wordAlpha[i] > 0.02) {
+      ctx.globalAlpha = wordAlpha[i];
+      ctx.font = `${10 + params.size * 3}px Arial, Helvetica, sans-serif`;
+      ctx.fillStyle = '#eee';
+      ctx.fillText(paragraphs[activeIdx][i], px[i], py[i]);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(150, 190, 255, 0.5)';
+      ctx.arc(px[i], py[i], params.size * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+// --- playback -----------------------------------------------------------------
+let running = true, acc = 0, last = performance.now();
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (running) {
+    updateActiveParagraph();
+    stepParticles(dt);
+    resolveWordCollisions();
+    acc += dt * params.rate;
+    while (acc >= 1) { stepWordAutomaton(); acc -= 1; }
+    for (let i = 0; i < N; i++) wordAlpha[i] += (wordState[i] - wordAlpha[i]) * 0.15;
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+addEventListener('keydown', e => {
+  if (['TEXTAREA', 'INPUT'].includes(e.target.tagName)) return;
+  if (e.code === 'Space') running = !running;
+  if (e.key === 's') { updateActiveParagraph(); stepParticles(1 / 60); resolveWordCollisions(); stepWordAutomaton(); }
+  if (e.key === '[') setPhase(Math.max(0, phase - 0.02));
+  if (e.key === ']') setPhase(Math.min(1, phase + 0.02));
+  if (e.key === 'l') legend.style.display = legend.style.display === 'none' ? '' : 'none';
+});
+
+// --- params, phase (same mix()/setPhase() mechanism as Lesson 3, a third time) -
+const sliders = {};
+const params = { speed: 80, jitter: 40, drag: 0.7, size: 2.5, wbase: 0.2, wspread: 0.2, rate: 4, pull: 0.6 };   // pull: not in FROZEN/LIQUID_PRESET, so phase never touches it -- a layout knob, not a "feel" knob
+const ranges = {
+  speed: [5, 300, 1], jitter: [0, 200, 1], drag: [0.1, 0.999, 0.001], size: [1, 6, 0.1],
+  wbase: [0, 1, 0.01], wspread: [0, 1, 0.01], rate: [0.5, 15, 0.5], pull: [0, 3, 0.05],
+};
+
+// Frozen: particles barely drift, words rarely light up and stay sparse.
+// Liquid: particles are energetic, words flicker on and off eagerly.
+const FROZEN = { speed: 15, jitter: 6, drag: 0.35, size: 3, wbase: 0.04, wspread: 0.12, rate: 2 };
+const LIQUID_PRESET = { speed: 140, jitter: 90, drag: 0.92, size: 1.8, wbase: 0.45, wspread: 0.4, rate: 9 };
+const mix = (a, b, t) => a + (b - a) * t;
+
+let phase = 0.5;
+function setPhase(t) {
+  phase = t;
+  for (const k in FROZEN) params[k] = clampParam(k, +mix(FROZEN[k], LIQUID_PRESET[k], t).toFixed(3));
+  if (phaseInput) phaseInput.value = t;
+  showParams();
+}
+
+function clampParam(name, v) {
+  const [min, max] = ranges[name] || [0, Infinity];
+  return Math.max(min, Math.min(max, v));
+}
+
+function setParam(name, v) {
+  if (name in params) { params[name] = v; showParams(); }
+}
+
+const info = document.createElement('pre');
+info.style.cssText = 'position:fixed;top:4px;right:8px;color:#8f8;margin:0;font:12px monospace;text-align:right';
+document.body.appendChild(info);
+function showParams() {
+  const pIdx = Math.min(paragraphs.length - 1, Math.floor(phase * paragraphs.length));
+  info.textContent = `paragraph ${pIdx + 1} / ${paragraphs.length}\nphase ${phase.toFixed(2)}\n` + JSON.stringify(params, null, 1);
+  for (const k in sliders) {
+    sliders[k].input.value = params[k];
+    sliders[k].out.textContent = Number(params[k].toFixed(3));
+  }
+}
+showParams();
+
+const legend = document.createElement('pre');
+legend.style.cssText = 'position:fixed;bottom:52px;left:8px;color:#8f8;margin:0;font:12px monospace;pointer-events:none';
+legend.textContent = [
+  '[ / ]   phase (which paragraph)', 'space   pause', 's   step', 'l   hide legend',
+].join('\n');
+document.body.appendChild(legend);
+
+// --- bottomDock: identical structure to Lessons 3-5 --------------------------
+const bottomDock = document.createElement('div');
+bottomDock.style.cssText = 'position:fixed;left:0;right:0;bottom:0;display:flex;flex-direction:column';
+document.body.appendChild(bottomDock);
+
+const panel = document.createElement('div');
+panel.style.cssText = 'background:#000d;padding:8px 12px;font:13px monospace;color:#8f8;display:none;max-height:70vh;overflow-y:auto';
+bottomDock.appendChild(panel);
+
+const phaseBar = document.createElement('div');
+phaseBar.style.cssText = 'display:flex;align-items:center;gap:8px;background:#000d;padding:8px 12px;font:13px monospace;color:#8f8;border-top:1px solid #353';
+bottomDock.appendChild(phaseBar);
+
+let phaseInput;
+{
+  const label = document.createElement('span'); label.textContent = 'phase';
+  phaseInput = document.createElement('input');
+  Object.assign(phaseInput, { type: 'range', min: 0, max: 1, step: 0.01, value: phase });
+  phaseInput.style.flex = '1';
+  const out = document.createElement('span'); out.textContent = phase.toFixed(2);
+  phaseInput.addEventListener('input', () => { setPhase(+phaseInput.value); out.textContent = phase.toFixed(2); });
+  phaseBar.append(label, phaseInput, out);
+}
+
+for (const k in ranges) {
+  const [min, max, step] = ranges[k];
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:90px 1fr 50px;gap:8px;align-items:center;margin:6px 0';
+  const label = document.createElement('span'); label.textContent = k;
+  const input = document.createElement('input');
+  Object.assign(input, { type: 'range', min, max, step });
+  const out = document.createElement('span');
+  input.addEventListener('input', () => setParam(k, +input.value));
+  row.append(label, input, out);
+  panel.appendChild(row);
+  sliders[k] = { input, out };
+}
+
+function addButton(text, fn, parent = panel) {
+  const b = document.createElement('button');
+  b.textContent = text;
+  b.style.cssText = 'font:14px monospace;padding:8px 12px;margin:4px 4px 0 0;background:#111;color:#8f8;border:1px solid #484;border-radius:4px';
+  b.addEventListener('click', fn);
+  parent.appendChild(b);
+  return b;
+}
+addButton('pause / run', () => { running = !running; });
+addButton('step',        () => { updateActiveParagraph(); stepParticles(1 / 60); resolveWordCollisions(); stepWordAutomaton(); });
+addButton('scatter',     () => { scatterParticles(); });
+
+const toggle = addButton('controls', () => {
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}, document.body);
+toggle.style.cssText += ';position:fixed;top:4px;left:4px;opacity:0.7';
+
+setPhase(phase);
+
+if (matchMedia('(pointer: coarse)').matches) legend.style.display = 'none';
+</script></body></html>

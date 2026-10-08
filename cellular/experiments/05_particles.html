@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lesson 05 · Particles — Water / Words / Memory</title>
+  <link rel="icon" type="image/png" href="../../favicon_1.png" />
+  <meta name="robots" content="noindex" />
+</head>
+<body style="margin:0;background:#000">
+<canvas id="cv"></canvas>
+<script>
+// A different kind of system from Lessons 1-4. Two big shifts:
+//
+// 1. Continuous position instead of a grid cell. Particles live at
+//    floating-point (x, y) in pixel space, not at an integer index into a
+//    Uint8Array. There is no "which cell am I" -- only "where am I".
+// 2. Continuous time instead of discrete generations. The automaton advanced
+//    in whole generation-ticks, paced by params.rate through an accumulator
+//    (frame() in index.html). Particles instead integrate using the actual
+//    elapsed dt every rendered frame -- there's no reason to quantize motion
+//    into ticks when nothing about it is inherently discrete.
+//
+// What carries over: the temp field from Lesson 4 is reused exactly as-is
+// (same diffuseTemp(), same paintable heat/cool) -- it still ticks in
+// discrete steps via the same accumulator pattern, because diffusion still
+// doesn't need to run at full frame rate. Particles READ it via sampleTemp(),
+// the same "one system reads another, doesn't own it" shape as Lesson 4's
+// freeze/melt reading temp. And `phase` reuses Lesson 3's exact mix()/
+// setPhase() mechanism, just blending different parameters (speed, jitter,
+// drag, size) -- proof the technique isn't specific to cellular automata.
+
+const CELL = 12;                                   // temp field resolution, same unit as earlier lessons
+const W = Math.floor(innerWidth / CELL);
+const H = Math.floor(innerHeight / CELL);
+
+const off = document.createElement('canvas');       // low-res buffer the temp field is drawn into...
+off.width = W; off.height = H;
+const octx = off.getContext('2d');
+
+const cv = document.getElementById('cv');            // ...then stretched smoothly onto this full-res canvas
+const ctx = cv.getContext('2d');
+cv.style.display = 'block';
+cv.style.touchAction = 'none';
+function fit() { cv.width = innerWidth; cv.height = innerHeight; }
+fit();
+addEventListener('resize', fit);
+
+const COLD = [10, 20, 90], HOT = [120, 20, 15];           // background field colour, muted
+const PCOLD = [120, 220, 255], PHOT = [255, 200, 70];     // particle colour, deliberately brighter/different hue so they read clearly against the field
+
+let temp = new Float32Array(W * H);   // 0 cold .. 1 hot, same field as Lesson 4
+function initTemp() {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) temp[y * W + x] = x / (W - 1);
+}
+initTemp();
+
+function diffuseTemp(t) {   // identical to 04_interacting_grids.html
+  const next = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    const up    = t[((y - 1 + H) % H) * W + x];
+    const down  = t[((y + 1) % H) * W + x];
+    const left  = t[y * W + (x - 1 + W) % W];
+    const right = t[y * W + (x + 1) % W];
+    const avg = (up + down + left + right) / 4;
+    next[i] = t[i] + params.diffuse * (avg - t[i]);
+  }
+  return next;
+}
+
+function sampleTemp(x, y) {   // read the field at a continuous position -- the new technique this lesson adds
+  const gx = Math.min(W - 1, Math.max(0, Math.floor(x / cv.width * W)));
+  const gy = Math.min(H - 1, Math.max(0, Math.floor(y / cv.height * H)));
+  return temp[gy * W + gx];
+}
+
+const N = 320;
+const px = new Float32Array(N), py = new Float32Array(N);
+const vx = new Float32Array(N), vy = new Float32Array(N);
+function scatterParticles() {
+  for (let i = 0; i < N; i++) {
+    px[i] = Math.random() * cv.width; py[i] = Math.random() * cv.height;
+    vx[i] = (Math.random() * 2 - 1) * 20; vy[i] = (Math.random() * 2 - 1) * 20;
+  }
+}
+scatterParticles();
+
+function stepParticles(dt) {
+  const d = Math.pow(params.drag, dt);          // frame-rate-independent damping: retain `drag` fraction of velocity PER SECOND
+  for (let i = 0; i < N; i++) {
+    const t = sampleTemp(px[i], py[i]);          // reading the OTHER system, same shape as freeze/melt reading temp in Lesson 4
+    const j = params.jitter * (0.3 + 1.4 * t);   // hotter patches jitter particles harder -- no new param needed, same trick as Lesson 4
+    vx[i] += (Math.random() * 2 - 1) * j * dt;
+    vy[i] += (Math.random() * 2 - 1) * j * dt;
+    vx[i] *= d; vy[i] *= d;
+    const sp = Math.hypot(vx[i], vy[i]);
+    if (sp > params.speed) { const k = params.speed / sp; vx[i] *= k; vy[i] *= k; }
+    px[i] += vx[i] * dt; py[i] += vy[i] * dt;
+    if (px[i] < 0) px[i] += cv.width; else if (px[i] >= cv.width) px[i] -= cv.width;
+    if (py[i] < 0) py[i] += cv.height; else if (py[i] >= cv.height) py[i] -= cv.height;
+  }
+}
+
+function drawTempBuffer() {
+  const img = octx.createImageData(W, H);
+  for (let i = 0; i < temp.length; i++) {
+    const t = temp[i];
+    img.data[i * 4]     = COLD[0] + (HOT[0] - COLD[0]) * t;
+    img.data[i * 4 + 1] = COLD[1] + (HOT[1] - COLD[1]) * t;
+    img.data[i * 4 + 2] = COLD[2] + (HOT[2] - COLD[2]) * t;
+    img.data[i * 4 + 3] = 255;
+  }
+  octx.putImageData(img, 0, 0);
+}
+
+function draw() {
+  drawTempBuffer();
+  ctx.drawImage(off, 0, 0, W, H, 0, 0, cv.width, cv.height);   // stretched WITHOUT pixelation -- browser blurs it smoothly
+  for (let i = 0; i < N; i++) {
+    const t = sampleTemp(px[i], py[i]);
+    const r = PCOLD[0] + (PHOT[0] - PCOLD[0]) * t, g = PCOLD[1] + (PHOT[1] - PCOLD[1]) * t, b = PCOLD[2] + (PHOT[2] - PCOLD[2]) * t;
+    ctx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`;
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = params.size * 3;              // soft glow instead of a hard circle -- cheap, reads as "particle" not "pixel"
+    ctx.beginPath();
+    ctx.arc(px[i], py[i], params.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+}
+
+// --- brush: stir/disperse particles, or paint heat/cold -------------------
+let lastPX = null, lastPY = null;
+function paint(e) {
+  const r = cv.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  if (e.altKey) {                                  // alt+drag: heat/cool the temp FIELD, same as Lesson 4
+    const gx = Math.floor(mx / cv.width * W), gy = Math.floor(my / cv.height * H);
+    const cellRad = Math.max(1, Math.round(params.brush / (cv.width / W)));
+    for (let dy = -cellRad; dy <= cellRad; dy++) for (let dx = -cellRad; dx <= cellRad; dx++) {
+      if (dx * dx + dy * dy > cellRad * cellRad) continue;
+      const x = (gx + dx + W) % W, y = (gy + dy + H) % H, i = y * W + x;
+      temp[i] = Math.max(0, Math.min(1, temp[i] + (e.shiftKey ? -0.15 : 0.15)));
+    }
+  } else {                                         // drag: stir particles along your motion; right-drag: disperse them outward
+    const disperse = (e.buttons & 2) === 2;
+    const mdx = lastPX === null ? 0 : mx - lastPX, mdy = lastPY === null ? 0 : my - lastPY;
+    const rad2 = params.brush * params.brush;
+    for (let i = 0; i < N; i++) {
+      const ddx = px[i] - mx, ddy = py[i] - my, d2 = ddx * ddx + ddy * ddy;
+      if (d2 > rad2) continue;
+      if (disperse) {
+        const d = Math.sqrt(d2) || 1;
+        vx[i] += (ddx / d) * 80; vy[i] += (ddy / d) * 80;
+      } else {
+        vx[i] += mdx * 4; vy[i] += mdy * 4;
+      }
+    }
+  }
+  lastPX = mx; lastPY = my;
+  draw();
+}
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  const r = cv.getBoundingClientRect();
+  lastPX = e.clientX - r.left; lastPY = e.clientY - r.top;
+  paint(e);
+});
+cv.addEventListener('pointermove', e => { if (e.buttons) paint(e); });
+cv.addEventListener('pointerup', () => { lastPX = lastPY = null; });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+let running = true, acc = 0, last = performance.now();
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (running) {
+    stepParticles(dt);                   // continuous: every rendered frame, using real dt
+    acc += dt * params.rate;             // discrete: temp diffusion still ticks, same accumulator pattern as Lesson 1/4
+    while (acc >= 1) { temp = diffuseTemp(temp); acc -= 1; }
+  }
+  draw();                                // always draw, even while paused -- the bug Lesson 1's review flagged, fixed here from the start
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+addEventListener('keydown', e => {
+  if (['TEXTAREA', 'INPUT'].includes(e.target.tagName)) return;
+  if (e.code === 'Space') running = !running;
+  if (e.key === 's') { stepParticles(1 / 60); temp = diffuseTemp(temp); }
+  if (e.key === '[') setPhase(Math.max(0, phase - 0.02));
+  if (e.key === ']') setPhase(Math.min(1, phase + 0.02));
+  if (e.key === 'l') legend.style.display = legend.style.display === 'none' ? '' : 'none';
+});
+
+const sliders = {};
+const params = { speed: 80, jitter: 40, drag: 0.7, size: 2.5, diffuse: 0.15, brush: 60, rate: 6 };
+const ranges = {                       // [min, max, step]
+  speed: [5, 300, 1], jitter: [0, 200, 1], drag: [0.1, 0.999, 0.001], size: [1, 6, 0.1],
+  diffuse: [0, 1, 0.01], brush: [10, 150, 5], rate: [1, 30, 1],
+};
+
+// --- phase: the exact mix()/setPhase() mechanism from Lesson 3, reused on
+// particle parameters instead of CA thresholds. Frozen: slow, barely jitters,
+// settles fast (constrained). Liquid: fast, energetic, glides (flowing).
+const FROZEN = { speed: 15, jitter: 6, drag: 0.35, size: 3.2 };
+const LIQUID_PRESET = { speed: 140, jitter: 90, drag: 0.92, size: 1.8 };
+const INT_KEYS = new Set();   // nothing to round this time -- every particle parameter is naturally continuous, so no staircase problem here
+const mix = (a, b, t) => a + (b - a) * t;
+
+let phase = 0.5;
+function setPhase(t) {
+  phase = t;
+  for (const k in FROZEN) {
+    let v = mix(FROZEN[k], LIQUID_PRESET[k], t);
+    if (INT_KEYS.has(k)) v = Math.round(v);
+    params[k] = clampParam(k, +v.toFixed(3));
+  }
+  if (phaseInput) phaseInput.value = t;
+  showParams();
+}
+
+function clampParam(name, v) {
+  const [min, max] = ranges[name] || [0, Infinity];
+  return Math.max(min, Math.min(max, v));
+}
+
+function setParam(name, v) {
+  if (name in params) { params[name] = v; showParams(); }
+}
+
+const info = document.createElement('pre');
+info.style.cssText = 'position:fixed;top:4px;right:8px;color:#8f8;margin:0;font:12px monospace';
+document.body.appendChild(info);
+function showParams() {
+  info.textContent = `phase ${phase.toFixed(2)}\n` + JSON.stringify(params, null, 1);
+  for (const k in sliders) {
+    sliders[k].input.value = params[k];
+    sliders[k].out.textContent = Number(params[k].toFixed(3));
+  }
+}
+showParams();
+
+const legend = document.createElement('pre');
+legend.style.cssText = 'position:fixed;bottom:52px;left:8px;color:#8f8;margin:0;font:12px monospace;pointer-events:none';
+legend.textContent = [
+  '[ / ]   phase (frozen → liquid)', 'space   pause', 's   step', 'l   hide legend',
+  'drag   stir particles', 'right-drag   disperse particles',
+  'alt+drag   heat', 'alt+shift+drag   cool',
+].join('\n');
+document.body.appendChild(legend);
+
+// bottomDock: identical structure to Lessons 3/4 -- phaseBar always visible,
+// panel (the rest of the sliders) toggles above it.
+const bottomDock = document.createElement('div');
+bottomDock.style.cssText = 'position:fixed;left:0;right:0;bottom:0;display:flex;flex-direction:column';
+document.body.appendChild(bottomDock);
+
+const panel = document.createElement('div');
+panel.style.cssText = 'background:#000d;padding:8px 12px;' +
+                      'font:13px monospace;color:#8f8;display:none;max-height:70vh;overflow-y:auto';
+bottomDock.appendChild(panel);
+
+const phaseBar = document.createElement('div');
+phaseBar.style.cssText = 'display:flex;align-items:center;gap:8px;background:#000d;' +
+                         'padding:8px 12px;font:13px monospace;color:#8f8;border-top:1px solid #353';
+bottomDock.appendChild(phaseBar);
+
+let phaseInput;
+{
+  const label = document.createElement('span'); label.textContent = 'phase';
+  phaseInput = document.createElement('input');
+  Object.assign(phaseInput, { type: 'range', min: 0, max: 1, step: 0.01, value: phase });
+  phaseInput.style.flex = '1';
+  const out = document.createElement('span'); out.textContent = phase.toFixed(2);
+  phaseInput.addEventListener('input', () => { setPhase(+phaseInput.value); out.textContent = phase.toFixed(2); });
+  phaseBar.append(label, phaseInput, out);
+}
+
+for (const k in ranges) {
+  const [min, max, step] = ranges[k];
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:90px 1fr 50px;gap:8px;align-items:center;margin:6px 0';
+  const label = document.createElement('span'); label.textContent = k;
+  const input = document.createElement('input');
+  Object.assign(input, { type: 'range', min, max, step });
+  const out = document.createElement('span');
+  input.addEventListener('input', () => setParam(k, +input.value));
+  row.append(label, input, out);
+  panel.appendChild(row);
+  sliders[k] = { input, out };
+}
+
+function addButton(text, fn, parent = panel) {
+  const b = document.createElement('button');
+  b.textContent = text;
+  b.style.cssText = 'font:14px monospace;padding:8px 12px;margin:4px 4px 0 0;background:#111;color:#8f8;border:1px solid #484;border-radius:4px';
+  b.addEventListener('click', fn);
+  parent.appendChild(b);
+  return b;
+}
+addButton('pause / run', () => { running = !running; });
+addButton('step',        () => { stepParticles(1 / 60); temp = diffuseTemp(temp); });
+addButton('scatter',     () => { scatterParticles(); });
+addButton('reset heat',  () => { initTemp(); });
+
+const toggle = addButton('controls', () => {
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}, document.body);
+toggle.style.cssText += ';position:fixed;top:4px;left:4px;opacity:0.7';
+
+setPhase(phase);
+
+if (matchMedia('(pointer: coarse)').matches) legend.style.display = 'none';
+</script></body></html>
