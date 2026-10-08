@@ -178,15 +178,28 @@ function stepParticles(dt) {
   }
 }
 
+// Word-box widths only change when params.size changes (font size), not
+// every frame -- measureText() is not cheap, so cache it instead of calling
+// it once per active word every single frame (this was a real perf cost:
+// dozens of measureText calls per frame, 60 times a second, for text that
+// almost never actually changes width).
+let cachedFontPx = -1;
+const halfWCache = new Float32Array(TOTAL_WORDS);
+function updateWordMeasurements() {
+  const fontPx = 10 + params.size * 3;
+  if (fontPx === cachedFontPx) return;
+  cachedFontPx = fontPx;
+  ctx.font = `${fontPx}px Arial, Helvetica, sans-serif`;
+  const pad = 6;
+  for (let i = 0; i < TOTAL_WORDS; i++) halfWCache[i] = ctx.measureText(wordText[i]).width / 2 + pad;
+}
+
 // --- keep word particles readable (2D-only, see Lesson 6 v1 for why) ------
 function resolveWordCollisions() {
   if (activeWordCount < 1) return;
-  const fontPx = 10 + params.size * 3;
-  ctx.font = `${fontPx}px Arial, Helvetica, sans-serif`;
-  const pad = 6;
-  const halfH = fontPx / 2 + pad;
-  const halfW = new Float32Array(activeWordCount);
-  for (let i = 0; i < activeWordCount; i++) halfW[i] = ctx.measureText(wordText[i]).width / 2 + pad;
+  updateWordMeasurements();
+  const halfW = halfWCache;
+  const halfH = cachedFontPx / 2 + 6;
 
   for (let pass = 0; pass < 2; pass++) {
     for (let i = 0; i < activeWordCount; i++) {
@@ -276,19 +289,22 @@ function draw() {
     ctx.fill();
   }
 
-  const stiffByPara = activeParagraphs.map(paragraphStiffness);   // once per paragraph, not once per word
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `${10 + params.size * 3}px Arial, Helvetica, sans-serif`;
+  ctx.fillStyle = '#eee';
   for (let i = 0; i < activeWordCount; i++) {
     if (wordAlpha[i] <= 0.02) continue;
-    const s = stiffByPara[wordParaIdx[i]] || 0;
-    ctx.save();
-    ctx.filter = `blur(${(s * 2.2).toFixed(1)}px)`;
+    // No ctx.filter blur here anymore -- it was the main cause of the
+    // slowdown you noticed. Canvas 2D's blur filter is expensive per draw
+    // call, and doing it for every visible word, every frame, with the
+    // blur radius only ever growing as paragraphs age, made the cost climb
+    // the longer the page stayed open. "Frozen" still reads clearly from
+    // slowness + density of links; the blur itself can come back later as
+    // a cheaper trick (e.g. a couple of faint offset copies) if it's missed.
     ctx.globalAlpha = wordAlpha[i];
-    ctx.font = `${10 + params.size * 3}px Arial, Helvetica, sans-serif`;
-    ctx.fillStyle = '#eee';
     ctx.fillText(wordText[i], px[i], py[i]);
-    ctx.restore();
   }
+  ctx.globalAlpha = 1;
 }
 
 // --- brush: stir/disperse particles, or paint heat/cold -- same as Lesson 5
