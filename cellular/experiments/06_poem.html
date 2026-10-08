@@ -1,31 +1,38 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lesson 06 · Poem — Water / Words / Memory</title>
-  <link rel="icon" type="image/png" href="../../favicon_1.png" />
-  <meta name="robots" content="noindex" />
-</head>
-<body style="margin:0;background:#000">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<html><body style="margin:0;background:#000">
 <canvas id="cv"></canvas>
 <script src="poem.js"></script>
 <script>
-// Particles (from Lesson 5, temp field dropped to keep focus) where some
-// particles HOST a word from the currently active paragraph instead of just
-// being a dot. Three things decide what's on screen:
+// Two layers that both read the same temperature field but age completely
+// differently, deliberately:
 //
-// 1. `phase` picks which paragraph is active -- a coarse, stepped choice on
-//    purpose (there are only a few paragraphs; unlike Lesson 3's thresholds,
-//    there's no finer-grained value to glide between).
-// 2. A small 1D cellular automaton decides which words IN that paragraph are
-//    currently visible. Same idea as Lesson 1/2's birth/survival rule, just
-//    along a line of words (left/right neighbours, wrapping) instead of a
-//    2D grid of cells -- a word is more likely to be alive if its neighbours
-//    are alive, biased by `wbase`/`wspread`, which `phase` blends like every
-//    other parameter so far.
-// 3. Thin lines connect each visible word to its 2 nearest other visible
-//    words, redrawn every frame from their current (moving) positions.
+// AMBIENT layer (plain dots) -- behaviour comes from `phase`, exactly like
+// Lesson 5: frozen = slow + densely linked, liquid = fast + fragmented. This
+// is "the environment".
+//
+// WORD layer -- `phase` controls how many paragraphs have accumulated so
+// far (phase 0 = just the first, phase 1 = all of them), but that spawning
+// is MONOTONIC: dragging phase back down never un-spawns a paragraph that
+// already appeared, since paragraphs accumulate and don't disappear. Once
+// spawned, each paragraph ages on its own independent clock regardless of
+// where phase sits afterward: freshly spawned it's fast/jittery/loosely-
+// linked ("hot fluid"), and over params.coolDuration seconds it slows,
+// stiffens, links into a denser network with its siblings, and blurs
+// slightly -- "frozen" in the sense of settled, not in the sense of
+// vanishing. The ambient temp field still has a voice here, but a minor
+// one: the local temperature near a paragraph's words nudges its cooling
+// rate faster or slower (hotter environment, slower freeze) -- connected to
+// the real temperature, but as a secondary influence on an otherwise
+// independent, accumulating process, not a direct 1:1 read.
+
+const CELL = 12;
+const W = Math.floor(innerWidth / CELL);
+const H = Math.floor(innerHeight / CELL);
+
+const off = document.createElement('canvas');
+off.width = W; off.height = H;
+const octx = off.getContext('2d');
 
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
@@ -35,71 +42,161 @@ function fit() { cv.width = innerWidth; cv.height = innerHeight; }
 fit();
 addEventListener('resize', fit);
 
-// --- the poem, parsed -------------------------------------------------------
-// Blank-line-separated paragraphs, each split into words. POEM comes from
-// poem.js, loaded before this script -- edit that file, not this one.
+const COLD = [10, 20, 90], HOT = [120, 20, 15];
+const PCOLD = [150, 200, 255], PHOT = [255, 180, 90];
+
+let temp = new Float32Array(W * H);
+function initTemp() {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) temp[y * W + x] = x / (W - 1);
+}
+initTemp();
+
+function diffuseTemp(t) {
+  const next = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    const up    = t[((y - 1 + H) % H) * W + x];
+    const down  = t[((y + 1) % H) * W + x];
+    const left  = t[y * W + (x - 1 + W) % W];
+    const right = t[y * W + (x + 1) % W];
+    const avg = (up + down + left + right) / 4;
+    next[i] = t[i] + params.diffuse * (avg - t[i]);
+  }
+  return next;
+}
+
+function sampleTemp(x, y) {
+  const gx = Math.min(W - 1, Math.max(0, Math.floor(x / cv.width * W)));
+  const gy = Math.min(H - 1, Math.max(0, Math.floor(y / cv.height * H)));
+  return temp[gy * W + gx];
+}
+
+// --- the poem, parsed, and a fixed particle slot for every word up front ---
+// Word slots never move between paragraphs or resize -- paragraph p's words
+// always live at particle indices [wordOffsets[p], wordOffsets[p] + len).
+// Ambient dots always live at [TOTAL_WORDS, N). Which word slots are
+// currently "spawned" (visible, moving) grows over time; already-assigned
+// slots that haven't spawned yet just sit inert until their paragraph's turn.
 function parsePoem(text) {
   return text.trim().split(/\n\s*\n/).map(p => p.trim().split(/\s+/));
 }
 const paragraphs = parsePoem(POEM);
+const wordText = [], wordParaIdx = [], wordOffsets = [];
+{
+  let acc = 0;
+  for (let p = 0; p < paragraphs.length; p++) {
+    wordOffsets.push(acc);
+    for (const w of paragraphs[p]) { wordText.push(w); wordParaIdx.push(p); acc++; }
+  }
+}
+const TOTAL_WORDS = wordText.length;
+const N = TOTAL_WORDS + 70;   // + spare ambient dots
 
-// --- particles ---------------------------------------------------------------
-// N is large enough to host the longest paragraph, plus some spare particles
-// that just drift as plain dots -- texture, not text.
-const N = Math.max(...paragraphs.map(p => p.length), 24);
 const px = new Float32Array(N), py = new Float32Array(N);
 const vx = new Float32Array(N), vy = new Float32Array(N);
-function scatterParticles() {
-  for (let i = 0; i < N; i++) {
+const wordAlpha = new Float32Array(N);
+
+function scatterDots() {
+  for (let i = TOTAL_WORDS; i < N; i++) {
     px[i] = Math.random() * cv.width; py[i] = Math.random() * cv.height;
     vx[i] = (Math.random() * 2 - 1) * 20; vy[i] = (Math.random() * 2 - 1) * 20;
   }
 }
-scatterParticles();
+scatterDots();
+
+// --- word layer: paragraphs accumulate, each ages on its own -------------
+const HOT_WORD    = { speed: 160, jitter: 140, drag: 0.50, linkR: 18 };    // freshly spawned: fast fluid
+const FROZEN_WORD = { speed: 3,   jitter: 1.5,  drag: 0.985, linkR: 240 }; // fully aged: settled, stiff lattice
+const mix = (a, b, t) => a + (b - a) * t;
+
+let elapsed = 0, nextParagraphIdx = 0;
+let activeParagraphs = [];   // { pIdx, start, count, spawnTime }
+let activeWordCount = 0;     // = end offset of the most recently spawned paragraph
+
+function spawnParagraph(pIdx) {
+  const start = wordOffsets[pIdx], count = paragraphs[pIdx].length;
+  for (let k = 0; k < count; k++) {
+    const i = start + k;
+    px[i] = Math.random() * cv.width; py[i] = Math.random() * cv.height;
+    const ang = Math.random() * Math.PI * 2, spd = HOT_WORD.speed * (0.5 + Math.random() * 0.5);
+    vx[i] = Math.cos(ang) * spd; vy[i] = Math.sin(ang) * spd;
+    wordAlpha[i] = 0;
+  }
+  activeParagraphs.push({ pIdx, start, count, spawnTime: elapsed });
+  activeWordCount = start + count;
+}
+
+function paragraphCentroid(ap) {
+  let sx = 0, sy = 0;
+  for (let k = 0; k < ap.count; k++) { sx += px[ap.start + k]; sy += py[ap.start + k]; }
+  return [sx / ap.count, sy / ap.count];
+}
+
+// age -> stiffness (0 fresh .. 1 fully frozen), nudged by the real temp
+// field sampled near that paragraph's own words -- hotter environment cools
+// it slower, colder environment faster. A secondary effect (+-30%), not the
+// main driver -- age is.
+function paragraphStiffness(ap) {
+  const [cx, cy] = paragraphCentroid(ap);
+  const envT = sampleTemp(cx, cy);
+  const rate = 1.3 - 0.6 * envT;
+  const effectiveAge = (elapsed - ap.spawnTime) * rate;
+  return Math.max(0, Math.min(1, effectiveAge / params.coolDuration));
+}
 
 function stepParticles(dt) {
-  const d = Math.pow(params.drag, dt);
-  const cx = cv.width / 2, cy = cv.height / 2;
-  for (let i = 0; i < N; i++) {
-    vx[i] += (Math.random() * 2 - 1) * params.jitter * dt;
-    vy[i] += (Math.random() * 2 - 1) * params.jitter * dt;
-    if (i < M) {   // only particles currently hosting a word get pulled toward the centre
-      vx[i] += (cx - px[i]) * params.pull * dt;
-      vy[i] += (cy - py[i]) * params.pull * dt;
-    }
-    vx[i] *= d; vy[i] *= d;
+  // ambient dots: driven by `phase` via params.speed/jitter/drag, exactly like Lesson 5
+  const dAmbient = Math.pow(params.drag, dt);
+  for (let i = TOTAL_WORDS; i < N; i++) {
+    const t = sampleTemp(px[i], py[i]);
+    const j = params.jitter * (0.3 + 1.4 * t);
+    vx[i] += (Math.random() * 2 - 1) * j * dt;
+    vy[i] += (Math.random() * 2 - 1) * j * dt;
+    vx[i] *= dAmbient; vy[i] *= dAmbient;
     const sp = Math.hypot(vx[i], vy[i]);
     if (sp > params.speed) { const k = params.speed / sp; vx[i] *= k; vy[i] *= k; }
     px[i] += vx[i] * dt; py[i] += vy[i] * dt;
     if (px[i] < 0) px[i] += cv.width; else if (px[i] >= cv.width) px[i] -= cv.width;
     if (py[i] < 0) py[i] += cv.height; else if (py[i] >= cv.height) py[i] -= cv.height;
   }
+  // word particles: each paragraph ages independently, its OWN stiffness drives its OWN motion
+  for (const ap of activeParagraphs) {
+    const s = paragraphStiffness(ap);
+    const speed = mix(HOT_WORD.speed, FROZEN_WORD.speed, s);
+    const jitter = mix(HOT_WORD.jitter, FROZEN_WORD.jitter, s);
+    const d = Math.pow(mix(HOT_WORD.drag, FROZEN_WORD.drag, s), dt);
+    for (let k = 0; k < ap.count; k++) {
+      const i = ap.start + k;
+      vx[i] += (Math.random() * 2 - 1) * jitter * dt;
+      vy[i] += (Math.random() * 2 - 1) * jitter * dt;
+      vx[i] *= d; vy[i] *= d;
+      const sp = Math.hypot(vx[i], vy[i]);
+      if (sp > speed) { const k2 = speed / sp; vx[i] *= k2; vy[i] *= k2; }
+      px[i] += vx[i] * dt; py[i] += vy[i] * dt;
+      // no wrap -- resolveWordCollisions keeps these on-screen
+    }
+  }
 }
 
-// --- keep word-hosting particles from overlapping (2D-only) -----------------
-// In 3D, two words at different depths just wouldn't visually collide at the
-// same (x, y) -- depth would separate them for free. There's no such axis
-// here, so overlap has to be resolved explicitly: treat each visible word as
-// a text-sized box and push overlapping pairs apart along whichever axis
-// needs the smaller correction (standard AABB separation).
+// --- keep word particles readable (2D-only, see Lesson 6 v1 for why) ------
 function resolveWordCollisions() {
-  if (M < 2) return;
+  if (activeWordCount < 1) return;
   const fontPx = 10 + params.size * 3;
-  ctx.font = `${fontPx}px Arial, Helvetica, sans-serif`;   // must match draw()'s font exactly, or measureText lies
+  ctx.font = `${fontPx}px Arial, Helvetica, sans-serif`;
   const pad = 6;
   const halfH = fontPx / 2 + pad;
-  const halfW = new Float32Array(M);
-  for (let i = 0; i < M; i++) halfW[i] = ctx.measureText(paragraphs[activeIdx][i]).width / 2 + pad;
+  const halfW = new Float32Array(activeWordCount);
+  for (let i = 0; i < activeWordCount; i++) halfW[i] = ctx.measureText(wordText[i]).width / 2 + pad;
 
-  for (let pass = 0; pass < 2; pass++) {       // a couple of passes resolves most chains of overlaps in one frame
-    for (let i = 0; i < M; i++) {
-      if (wordAlpha[i] < 0.05) continue;        // don't bother separating words nobody can see yet
-      for (let j = i + 1; j < M; j++) {
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < activeWordCount; i++) {
+      if (wordAlpha[i] < 0.05) continue;
+      for (let j = i + 1; j < activeWordCount; j++) {
         if (wordAlpha[j] < 0.05) continue;
         const dx = px[j] - px[i], dy = py[j] - py[i];
         const overlapX = halfW[i] + halfW[j] - Math.abs(dx);
         const overlapY = halfH + halfH - Math.abs(dy);
-        if (overlapX <= 0 || overlapY <= 0) continue;    // boxes don't actually overlap
+        if (overlapX <= 0 || overlapY <= 0) continue;
         if (overlapX < overlapY) {
           const push = (overlapX / 2) * (dx < 0 ? -1 : 1);
           px[i] -= push; px[j] += push;
@@ -110,82 +207,152 @@ function resolveWordCollisions() {
       }
     }
   }
-}
-
-// --- which paragraph is active, and its word-automaton ----------------------
-// wordState/wordAlpha are fixed at length N so paragraph changes never
-// resize anything -- only indices 0..M-1 (M = current paragraph's word
-// count) are driven by the automaton; the rest stay at 0 and render as
-// plain dots. wordAlpha eases toward wordState each frame instead of
-// snapping, so flicker reads as a fade, not a pop.
-let activeIdx = -1, M = 0;
-const wordState = new Uint8Array(N);
-const wordAlpha = new Float32Array(N);
-
-function stepWordAutomaton() {
-  const next = new Uint8Array(N);
-  for (let i = 0; i < M; i++) {
-    const left = wordState[(i - 1 + M) % M], right = wordState[(i + 1) % M];
-    const nb = left + right;                      // 0, 1, or 2 alive neighbours, wrapping within THIS paragraph
-    const pAlive = params.wbase + params.wspread * (nb / 2);
-    next[i] = Math.random() < pAlive ? 1 : 0;
+  for (let i = 0; i < activeWordCount; i++) {
+    const w = halfW[i];
+    if (px[i] < w)                 { px[i] = w;                 vx[i] =  Math.abs(vx[i]) * 0.4; }
+    else if (px[i] > cv.width - w) { px[i] = cv.width - w;      vx[i] = -Math.abs(vx[i]) * 0.4; }
+    if (py[i] < halfH)             { py[i] = halfH;             vy[i] =  Math.abs(vy[i]) * 0.4; }
+    else if (py[i] > cv.height - halfH) { py[i] = cv.height - halfH; vy[i] = -Math.abs(vy[i]) * 0.4; }
   }
-  wordState.set(next);
 }
 
-function updateActiveParagraph() {
-  const idx = Math.min(paragraphs.length - 1, Math.floor(phase * paragraphs.length));
-  if (idx === activeIdx) return;
-  activeIdx = idx;
-  M = paragraphs[idx].length;
-  wordState.fill(0);     // fresh paragraph starts from silence, the automaton has to "decide" to light words up
+function easeWordAlpha() {
+  for (let i = 0; i < activeWordCount; i++) wordAlpha[i] += (1 - wordAlpha[i]) * 0.1;   // fade in once, then stay -- words accumulate, they don't melt away anymore
 }
 
-// --- drawing ------------------------------------------------------------------
-function draw() {
-  ctx.clearRect(0, 0, cv.width, cv.height);
-
-  const alive = [];
-  for (let i = 0; i < M; i++) if (wordAlpha[i] > 0.05) alive.push(i);
-
-  ctx.strokeStyle = 'rgba(140, 200, 255, 0.18)';
+// --- links: two separate networks, ambient dots and words, different drivers
+function drawDotLinks() {
+  const maxD2 = params.linkDist * params.linkDist;
+  if (maxD2 <= 0) return;
+  ctx.strokeStyle = 'rgba(180, 210, 255, 0.08)';
   ctx.lineWidth = 1;
-  for (const i of alive) {
-    const dists = alive.filter(j => j !== i).map(j => [(px[i]-px[j])**2 + (py[i]-py[j])**2, j]).sort((a, b) => a[0] - b[0]);
-    for (let k = 0; k < Math.min(2, dists.length); k++) {
-      const j = dists[k][1];
-      ctx.beginPath(); ctx.moveTo(px[i], py[i]); ctx.lineTo(px[j], py[j]); ctx.stroke();
-    }
+  ctx.beginPath();
+  for (let i = TOTAL_WORDS; i < N; i++) for (let j = i + 1; j < N; j++) {
+    const dx = px[i] - px[j], dy = py[i] - py[j];
+    if (dx * dx + dy * dy < maxD2) { ctx.moveTo(px[i], py[i]); ctx.lineTo(px[j], py[j]); }
+  }
+  ctx.stroke();
+}
+
+function drawWordLinks() {
+  if (activeWordCount < 2 || !activeParagraphs.length) return;
+  const s = paragraphStiffness(activeParagraphs[0]);   // oldest paragraph stands in for "how frozen the whole network is"
+  const r = mix(HOT_WORD.linkR, FROZEN_WORD.linkR, s);
+  const maxD2 = r * r;
+  ctx.strokeStyle = 'rgba(200, 220, 255, 0.16)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < activeWordCount; i++) for (let j = i + 1; j < activeWordCount; j++) {
+    const dx = px[i] - px[j], dy = py[i] - py[j];
+    if (dx * dx + dy * dy < maxD2) { ctx.moveTo(px[i], py[i]); ctx.lineTo(px[j], py[j]); }
+  }
+  ctx.stroke();
+}
+
+function drawTempBuffer() {
+  const img = octx.createImageData(W, H);
+  for (let i = 0; i < temp.length; i++) {
+    const t = temp[i];
+    img.data[i * 4]     = COLD[0] + (HOT[0] - COLD[0]) * t;
+    img.data[i * 4 + 1] = COLD[1] + (HOT[1] - COLD[1]) * t;
+    img.data[i * 4 + 2] = COLD[2] + (HOT[2] - COLD[2]) * t;
+    img.data[i * 4 + 3] = 255;
+  }
+  octx.putImageData(img, 0, 0);
+}
+
+function draw() {
+  drawTempBuffer();
+  ctx.drawImage(off, 0, 0, W, H, 0, 0, cv.width, cv.height);
+  drawDotLinks();
+  drawWordLinks();
+
+  for (let i = TOTAL_WORDS; i < N; i++) {
+    const t = sampleTemp(px[i], py[i]);
+    const r = PCOLD[0] + (PHOT[0] - PCOLD[0]) * t, g = PCOLD[1] + (PHOT[1] - PCOLD[1]) * t, b = PCOLD[2] + (PHOT[2] - PCOLD[2]) * t;
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(${r | 0}, ${g | 0}, ${b | 0}, 0.6)`;
+    ctx.arc(px[i], py[i], params.size * 0.6, 0, Math.PI * 2);
+    ctx.fill();
   }
 
+  const stiffByPara = activeParagraphs.map(paragraphStiffness);   // once per paragraph, not once per word
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  for (let i = 0; i < N; i++) {
-    if (i < M && wordAlpha[i] > 0.02) {
-      ctx.globalAlpha = wordAlpha[i];
-      ctx.font = `${10 + params.size * 3}px Arial, Helvetica, sans-serif`;
-      ctx.fillStyle = '#eee';
-      ctx.fillText(paragraphs[activeIdx][i], px[i], py[i]);
-      ctx.globalAlpha = 1;
-    } else {
-      ctx.beginPath();
-      ctx.fillStyle = 'rgba(150, 190, 255, 0.5)';
-      ctx.arc(px[i], py[i], params.size * 0.6, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  for (let i = 0; i < activeWordCount; i++) {
+    if (wordAlpha[i] <= 0.02) continue;
+    const s = stiffByPara[wordParaIdx[i]] || 0;
+    ctx.save();
+    ctx.filter = `blur(${(s * 2.2).toFixed(1)}px)`;
+    ctx.globalAlpha = wordAlpha[i];
+    ctx.font = `${10 + params.size * 3}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = '#eee';
+    ctx.fillText(wordText[i], px[i], py[i]);
+    ctx.restore();
   }
 }
 
-// --- playback -----------------------------------------------------------------
+// --- brush: stir/disperse particles, or paint heat/cold -- same as Lesson 5
+let lastPX = null, lastPY = null;
+function paint(e) {
+  const r = cv.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  if (e.altKey) {
+    const gx = Math.floor(mx / cv.width * W), gy = Math.floor(my / cv.height * H);
+    const cellRad = Math.max(1, Math.round(params.brush / (cv.width / W)));
+    for (let dy = -cellRad; dy <= cellRad; dy++) for (let dx = -cellRad; dx <= cellRad; dx++) {
+      if (dx * dx + dy * dy > cellRad * cellRad) continue;
+      const x = (gx + dx + W) % W, y = (gy + dy + H) % H, i = y * W + x;
+      temp[i] = Math.max(0, Math.min(1, temp[i] + (e.shiftKey ? -0.15 : 0.15)));
+    }
+  } else {
+    const disperse = (e.buttons & 2) === 2;
+    const mdx = lastPX === null ? 0 : mx - lastPX, mdy = lastPY === null ? 0 : my - lastPY;
+    const rad2 = params.brush * params.brush;
+    for (let i = 0; i < N; i++) {
+      const ddx = px[i] - mx, ddy = py[i] - my, d2 = ddx * ddx + ddy * ddy;
+      if (d2 > rad2) continue;
+      if (disperse) {
+        const d = Math.sqrt(d2) || 1;
+        vx[i] += (ddx / d) * 80; vy[i] += (ddy / d) * 80;
+      } else {
+        vx[i] += mdx * 4; vy[i] += mdy * 4;
+      }
+    }
+  }
+  lastPX = mx; lastPY = my;
+  draw();
+}
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  const r = cv.getBoundingClientRect();
+  lastPX = e.clientX - r.left; lastPY = e.clientY - r.top;
+  paint(e);
+});
+cv.addEventListener('pointermove', e => { if (e.buttons) paint(e); });
+cv.addEventListener('pointerup', () => { lastPX = lastPY = null; });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+// --- playback --------------------------------------------------------------
+function restartPoem() {
+  activeParagraphs = []; activeWordCount = 0; nextParagraphIdx = 0; elapsed = 0;
+  wordAlpha.fill(0);
+  setPhase(0);   // otherwise the very next frame reads the old (high) phase and re-spawns everything instantly
+}
+
 let running = true, acc = 0, last = performance.now();
 function frame(now) {
   const dt = Math.min((now - last) / 1000, 0.1); last = now;
   if (running) {
-    updateActiveParagraph();
+    elapsed += dt;
+    // phase decides how many paragraphs have accumulated by now -- monotonic,
+    // so moving phase back down never un-spawns one already visible.
+    const targetSpawned = Math.min(paragraphs.length, Math.floor(phase * paragraphs.length) + 1);
+    while (nextParagraphIdx < targetSpawned) spawnParagraph(nextParagraphIdx++);
     stepParticles(dt);
     resolveWordCollisions();
     acc += dt * params.rate;
-    while (acc >= 1) { stepWordAutomaton(); acc -= 1; }
-    for (let i = 0; i < N; i++) wordAlpha[i] += (wordState[i] - wordAlpha[i]) * 0.15;
+    while (acc >= 1) { temp = diffuseTemp(temp); acc -= 1; }
+    easeWordAlpha();
   }
   draw();
   requestAnimationFrame(frame);
@@ -195,27 +362,28 @@ requestAnimationFrame(frame);
 addEventListener('keydown', e => {
   if (['TEXTAREA', 'INPUT'].includes(e.target.tagName)) return;
   if (e.code === 'Space') running = !running;
-  if (e.key === 's') { updateActiveParagraph(); stepParticles(1 / 60); resolveWordCollisions(); stepWordAutomaton(); }
   if (e.key === '[') setPhase(Math.max(0, phase - 0.02));
   if (e.key === ']') setPhase(Math.min(1, phase + 0.02));
   if (e.key === 'l') legend.style.display = legend.style.display === 'none' ? '' : 'none';
 });
 
-// --- params, phase (same mix()/setPhase() mechanism as Lesson 3, a third time) -
+// --- params, phase: now ambient-only (speed/jitter/drag/linkDist for dots) -
 const sliders = {};
-const params = { speed: 80, jitter: 40, drag: 0.7, size: 2.5, wbase: 0.2, wspread: 0.2, rate: 4, pull: 0.6 };   // pull: not in FROZEN/LIQUID_PRESET, so phase never touches it -- a layout knob, not a "feel" knob
+const params = { speed: 80, jitter: 40, drag: 0.7, size: 2.5, linkDist: 150, diffuse: 0.15, brush: 60, rate: 6, coolDuration: 40 };
 const ranges = {
-  speed: [5, 300, 1], jitter: [0, 200, 1], drag: [0.1, 0.999, 0.001], size: [1, 6, 0.1],
-  wbase: [0, 1, 0.01], wspread: [0, 1, 0.01], rate: [0.5, 15, 0.5], pull: [0, 3, 0.05],
+  speed: [5, 300, 1], jitter: [0, 200, 1], drag: [0.1, 0.999, 0.001], size: [1, 6, 0.1], linkDist: [0, 400, 5],
+  diffuse: [0, 1, 0.01], brush: [10, 150, 5], rate: [1, 30, 1], coolDuration: [5, 120, 1],
 };
 
-// Frozen: particles barely drift, words rarely light up and stay sparse.
-// Liquid: particles are energetic, words flicker on and off eagerly.
-const FROZEN = { speed: 15, jitter: 6, drag: 0.35, size: 3, wbase: 0.04, wspread: 0.12, rate: 2 };
-const LIQUID_PRESET = { speed: 140, jitter: 90, drag: 0.92, size: 1.8, wbase: 0.45, wspread: 0.4, rate: 9 };
-const mix = (a, b, t) => a + (b - a) * t;
+// Frozen/liquid shape the ambient dots' own motion/lattice -- ice-like vs
+// fragmented drift. Phase separately also decides how many paragraphs have
+// accumulated (see frame(), targetSpawned) -- but a spawned paragraph's own
+// motion/stiffness comes from its independent age (HOT_WORD / FROZEN_WORD,
+// above), not from phase.
+const FROZEN = { speed: 15, jitter: 6, drag: 0.35, size: 3, linkDist: 260 };
+const LIQUID_PRESET = { speed: 140, jitter: 90, drag: 0.92, size: 1.8, linkDist: 45 };
 
-let phase = 0.5;
+let phase = 0;   // start with just the first paragraph spawned, fresh -- not a mid-poem dump of several at once
 function setPhase(t) {
   phase = t;
   for (const k in FROZEN) params[k] = clampParam(k, +mix(FROZEN[k], LIQUID_PRESET[k], t).toFixed(3));
@@ -236,23 +404,25 @@ const info = document.createElement('pre');
 info.style.cssText = 'position:fixed;top:4px;right:8px;color:#8f8;margin:0;font:12px monospace;text-align:right';
 document.body.appendChild(info);
 function showParams() {
-  const pIdx = Math.min(paragraphs.length - 1, Math.floor(phase * paragraphs.length));
-  info.textContent = `paragraph ${pIdx + 1} / ${paragraphs.length}\nphase ${phase.toFixed(2)}\n` + JSON.stringify(params, null, 1);
+  info.textContent = `paragraphs spawned ${activeParagraphs.length} / ${paragraphs.length}\nphase ${phase.toFixed(2)}\n` + JSON.stringify(params, null, 1);
   for (const k in sliders) {
     sliders[k].input.value = params[k];
     sliders[k].out.textContent = Number(params[k].toFixed(3));
   }
 }
 showParams();
+setInterval(showParams, 500);   // paragraph count/age changes on its own timer, not just on slider input
 
 const legend = document.createElement('pre');
 legend.style.cssText = 'position:fixed;bottom:52px;left:8px;color:#8f8;margin:0;font:12px monospace;pointer-events:none';
 legend.textContent = [
-  '[ / ]   phase (which paragraph)', 'space   pause', 's   step', 'l   hide legend',
+  '[ / ]   phase (ambient dots + unlocks paragraphs)', 'space   pause', 'l   hide legend',
+  'drag   stir', 'right-drag   disperse',
+  'alt+drag   heat', 'alt+shift+drag   cool',
 ].join('\n');
 document.body.appendChild(legend);
 
-// --- bottomDock: identical structure to Lessons 3-5 --------------------------
+// --- bottomDock: identical structure to Lessons 3-5 -------------------------
 const bottomDock = document.createElement('div');
 bottomDock.style.cssText = 'position:fixed;left:0;right:0;bottom:0;display:flex;flex-direction:column';
 document.body.appendChild(bottomDock);
@@ -298,9 +468,11 @@ function addButton(text, fn, parent = panel) {
   parent.appendChild(b);
   return b;
 }
-addButton('pause / run', () => { running = !running; });
-addButton('step',        () => { updateActiveParagraph(); stepParticles(1 / 60); resolveWordCollisions(); stepWordAutomaton(); });
-addButton('scatter',     () => { scatterParticles(); });
+addButton('pause / run',    () => { running = !running; });
+addButton('scatter dots',   () => { scatterDots(); });
+addButton('next paragraph', () => setPhase(Math.min(1, phase + 1 / paragraphs.length)));
+addButton('restart poem',   () => { restartPoem(); });
+addButton('reset heat',     () => { initTemp(); });
 
 const toggle = addButton('controls', () => {
   panel.style.display = panel.style.display === 'none' ? 'block' : 'none';

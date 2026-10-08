@@ -1,13 +1,6 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lesson 05 · Particles — Water / Words / Memory</title>
-  <link rel="icon" type="image/png" href="../../favicon_1.png" />
-  <meta name="robots" content="noindex" />
-</head>
-<body style="margin:0;background:#000">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<html><body style="margin:0;background:#000">
 <canvas id="cv"></canvas>
 <script>
 // A different kind of system from Lessons 1-4. Two big shifts:
@@ -114,9 +107,32 @@ function drawTempBuffer() {
   octx.putImageData(img, 0, 0);
 }
 
+// Connects every pair of particles closer than params.linkDist -- one
+// distance threshold, driven by phase like everything else. Frozen: large
+// linkDist, almost everything connects (a dense lattice). Liquid: small
+// linkDist, only close neighbours do (fragmented). A single batched path
+// (one beginPath/stroke for every segment) rather than one stroke() call
+// per line -- O(N^2) pair checks is cheap, but hundreds of separate stroke
+// calls per frame would not be.
+function drawLinks() {
+  const maxD2 = params.linkDist * params.linkDist;
+  if (maxD2 <= 0) return;
+  ctx.strokeStyle = 'rgba(180, 210, 255, 0.10)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const dx = px[i] - px[j], dy = py[i] - py[j];
+      if (dx * dx + dy * dy < maxD2) { ctx.moveTo(px[i], py[i]); ctx.lineTo(px[j], py[j]); }
+    }
+  }
+  ctx.stroke();
+}
+
 function draw() {
   drawTempBuffer();
   ctx.drawImage(off, 0, 0, W, H, 0, 0, cv.width, cv.height);   // stretched WITHOUT pixelation -- browser blurs it smoothly
+  drawLinks();
   for (let i = 0; i < N; i++) {
     const t = sampleTemp(px[i], py[i]);
     const r = PCOLD[0] + (PHOT[0] - PCOLD[0]) * t, g = PCOLD[1] + (PHOT[1] - PCOLD[1]) * t, b = PCOLD[2] + (PHOT[2] - PCOLD[2]) * t;
@@ -194,17 +210,19 @@ addEventListener('keydown', e => {
 });
 
 const sliders = {};
-const params = { speed: 80, jitter: 40, drag: 0.7, size: 2.5, diffuse: 0.15, brush: 60, rate: 6 };
+const params = { speed: 80, jitter: 40, drag: 0.7, size: 2.5, diffuse: 0.15, brush: 60, rate: 6, linkDist: 150 };
 const ranges = {                       // [min, max, step]
   speed: [5, 300, 1], jitter: [0, 200, 1], drag: [0.1, 0.999, 0.001], size: [1, 6, 0.1],
-  diffuse: [0, 1, 0.01], brush: [10, 150, 5], rate: [1, 30, 1],
+  diffuse: [0, 1, 0.01], brush: [10, 150, 5], rate: [1, 30, 1], linkDist: [0, 400, 5],
 };
 
 // --- phase: the exact mix()/setPhase() mechanism from Lesson 3, reused on
 // particle parameters instead of CA thresholds. Frozen: slow, barely jitters,
-// settles fast (constrained). Liquid: fast, energetic, glides (flowing).
-const FROZEN = { speed: 15, jitter: 6, drag: 0.35, size: 3.2 };
-const LIQUID_PRESET = { speed: 140, jitter: 90, drag: 0.92, size: 1.8 };
+// settles fast (constrained), densely linked (linkDist high -- a lattice).
+// Liquid: fast, energetic, glides (flowing), links mostly broken apart
+// (linkDist low -- only close neighbours still connect).
+const FROZEN = { speed: 15, jitter: 6, drag: 0.35, size: 3.2, linkDist: 260 };
+const LIQUID_PRESET = { speed: 140, jitter: 90, drag: 0.92, size: 1.8, linkDist: 45 };
 const INT_KEYS = new Set();   // nothing to round this time -- every particle parameter is naturally continuous, so no staircase problem here
 const mix = (a, b, t) => a + (b - a) * t;
 
@@ -246,7 +264,7 @@ legend.style.cssText = 'position:fixed;bottom:52px;left:8px;color:#8f8;margin:0;
 legend.textContent = [
   '[ / ]   phase (frozen → liquid)', 'space   pause', 's   step', 'l   hide legend',
   'drag   stir particles', 'right-drag   disperse particles',
-  'alt+drag   heat', 'alt+shift+drag   cool',
+  'alt+drag   heat', 'alt+shift+drag   cool', 'linkDist: see controls panel',
 ].join('\n');
 document.body.appendChild(legend);
 
