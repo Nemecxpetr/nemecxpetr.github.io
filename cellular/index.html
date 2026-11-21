@@ -73,6 +73,15 @@ const lessons = [
 ];
 const bonus = { n: 'ex4', title: 'Exercise 4', file: 'experiments/exercise4.html',
   blurb: 'A separate, more advanced sketch — vector "gene" automaton with history scrubbing and direction-as-hue trails.' };
+// Live performance page. `preview` is what plays behind the card on hover
+// (the live page itself opens on its role chooser, which would be a black screen).
+const live = { n: '07', title: 'Live — cosi / čímsi', file: 'experiments/07_live.html', preview: 'experiments/03_phase.html',
+  blurb: 'Choose a role. During the performance the water on your screen is played live.' };
+
+// While LIVE_ONLY is true the index lists only the live page. The older
+// experiments are still online at their URLs, just not linked. Set it to
+// false to bring the full list back.
+const LIVE_ONLY = true;
 
 const stage = document.getElementById('stage');
 const list = document.getElementById('list');
@@ -93,7 +102,7 @@ function frameFor(entry) {
 
 function show(entry) {
   const f = frameFor(entry);
-  if (!f.src) f.src = entry.file;
+  if (!f.src) f.src = entry.preview || entry.file;
   for (const other of frames.values()) other.classList.toggle('active', other === f);
 }
 
@@ -105,7 +114,7 @@ function makeCard(entry, extraClass) {
   const b = document.createElement('button');
   b.className = 'card' + (extraClass ? ' ' + extraClass : '');
   b.innerHTML =
-    `<span class="tag">${extraClass ? 'bonus' : 'lesson'} ${entry.n}</span>` +
+    `<span class="tag">${extraClass === 'bonus' ? 'bonus' : 'lesson'} ${entry.n}</span>` +
     `<span class="title">${entry.title}</span>` +
     `<span class="blurb">${entry.blurb}</span>`;
   b.addEventListener('pointerenter', () => show(entry));
@@ -116,7 +125,12 @@ function makeCard(entry, extraClass) {
   return b;
 }
 
-for (const entry of lessons) list.appendChild(makeCard(entry));
-list.appendChild(makeCard(bonus, 'bonus'));
+if (LIVE_ONLY) {
+  list.appendChild(makeCard(live));
+} else {
+  for (const entry of lessons) list.appendChild(makeCard(entry));
+  list.appendChild(makeCard(live));
+  list.appendChild(makeCard(bonus, 'bonus'));
+}
 </script>
 </body></html>

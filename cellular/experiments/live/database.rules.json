@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "live": {
+      ".read": true,
+      "roles": {
+        ".write": "auth != null && auth.uid === 'XK85kNrN8lPOq8jN8UzgEuMkJVt1'"
+      },
+      "cmd": {
+        ".write": "auth != null && auth.uid === 'XK85kNrN8lPOq8jN8UzgEuMkJVt1'"
+      },
+      "presence": {
+        "$role": {
+          ".validate": "$role === 'cosi' || $role === 'cimsi'",
+          "$id": {
+            ".write": true,
+            ".validate": "newData.isBoolean()"
+          }
+        }
+      }
+    }
+  }
+}

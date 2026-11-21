@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <title>Lesson 07 · Live — Water / Words / Memory</title>
+  <link rel="icon" type="image/png" href="../../favicon_1.png" />
+  <meta name="robots" content="noindex" />
+  <style>
+    [hidden] { display: none !important; }
+    html, body { margin: 0; height: 100%; background: #000; color: #8f8; font: 14px monospace;
+                 overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+    #cv { display: block; position: fixed; inset: 0; width: 100vw; height: 100dvh; touch-action: none; image-rendering: pixelated; }
+    #choose { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+              gap: 24px; background: #000; z-index: 2; padding: 16px; box-sizing: border-box; }
+    #choose p { margin: 0 0 8px; color: #6a6; text-align: center; }
+    #choose button { font: 32px monospace; width: min(80vw, 320px); padding: 28px 0; background: #050a05; color: #8f8;
+                     border: 1px solid #484; border-radius: 8px; }
+    #choose button:active { background: #132313; }
+    #choose small { color: #464; text-align: center; }
+    #hud { position: fixed; left: calc(8px + env(safe-area-inset-left)); bottom: calc(8px + env(safe-area-inset-bottom));
+           display: flex; align-items: center; gap: 8px; opacity: 0.28; z-index: 1; }
+    #hud button { font: 12px monospace; background: #000a; color: #8f8; border: 1px solid #353; border-radius: 4px; padding: 6px 8px; }
+    #dot { width: 8px; height: 8px; border-radius: 50%; background: #a44; }
+    #dot.ok { background: #4a4; }
+    #msg { position: fixed; top: 40%; left: 0; right: 0; text-align: center; color: #6a6; pointer-events: none; z-index: 1; }
+  </style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="choose">
+  <p>vyber si / choose</p>
+  <button data-role="cosi">cosi</button>
+  <button data-role="cimsi">čímsi</button>
+  <small>nech obrazovku zapnutou · keep the screen on</small>
+</div>
+<div id="hud" hidden><span id="dot"></span><button id="switch">⟲ <span id="roleName"></span></button></div>
+<div id="msg"></div>
+
+<script type="module">
+import { createSim, paramsFor, phaseAt, LIQUID } from './live/sim.js';
+import { connect, ROLES, ROLE_LABEL } from './live/net.js';
+
+const cv = document.getElementById('cv');
+const choose = document.getElementById('choose');
+const hud = document.getElementById('hud');
+const dot = document.getElementById('dot');
+const msg = document.getElementById('msg');
+
+const net = await connect();
+let role = null, leave = null, lastCmdId = null, wakeLock = null;
+
+// grid sized to this phone's screen, rebuilt on rotation
+let sim = createSim(cv, { cell: 12 });
+let resizeTimer;
+addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { sim = createSim(cv, { cell: 12 }); }, 250); });
+
+net.on('status', s => { dot.classList.toggle('ok', s.ok); msg.textContent = s.ok || !role ? '' : s.text; });
+
+net.on('state', st => {
+  const c = st.cmd;
+  if (!role || !c || c.id === lastCmdId) return;
+  lastCmdId = c.id;
+  const fresh = !c.at || net.now() - c.at < 10000;       // don't replay old commands on join
+  if (fresh && (c.role === role || c.role === 'both')) sim.command(c.type);
+});
+
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && role) keepAwake(); });
+
+function start(r, fromTap) {
+  if (!ROLES.includes(r)) return;
+  role = r;
+  lastCmdId = net.getState().cmd && net.getState().cmd.id;
+  if (leave) leave();
+  leave = net.join(role);
+  history.replaceState(null, '', '#' + role);
+  document.getElementById('roleName').textContent = ROLE_LABEL[role];
+  choose.hidden = true; hud.hidden = false;
+  if (fromTap) {
+    const el = document.documentElement;
+    (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el)?.catch?.(() => {});
+    keepAwake();
+  }
+}
+
+choose.addEventListener('click', e => { const b = e.target.closest('button'); if (b) start(b.dataset.role, true); });
+document.getElementById('switch').addEventListener('click', () => {
+  if (leave) { leave(); leave = null; }
+  role = null; choose.hidden = false; hud.hidden = true;
+  history.replaceState(null, '', location.pathname + location.search);
+});
+const hashRole = location.hash.slice(1);
+if (ROLES.includes(hashRole)) start(hashRole, false);
+
+// touch paints liquid on your own screen only (not shared)
+cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); sim.paintAt(e.clientX, e.clientY, LIQUID); });
+cv.addEventListener('pointermove', e => { if (e.buttons) sim.paintAt(e.clientX, e.clientY, LIQUID); });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+let last = performance.now(), phase = 0;
+// console helper for checking a phone during setup: liveDebug()
+window.liveDebug = () => {
+  const ramp = net.getState().roles[role || 'cosi'], p = phaseAt(ramp, net.now());
+  return { role, phase: +p.toFixed(3), running: ramp.running !== false, params: paramsFor(p, ramp.over), mode: net.mode };
+};
+function frame(t) {
+  const dt = (t - last) / 1000; last = t;
+  const ramp = net.getState().roles[role || 'cosi'];
+  phase = phaseAt(ramp, net.now());
+  sim.setParams(paramsFor(phase, ramp.over));
+  if (role && ramp.running !== false) sim.tick(dt);
+  sim.draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
