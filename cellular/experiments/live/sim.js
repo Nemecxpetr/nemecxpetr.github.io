@@ -111,9 +111,27 @@ export function createSim(canvas, { cols, rows, cell = 12 } = {}) {
     for (let i = 0; i < grid.length; i++) grid[i] = Math.random() < density ? LIQUID : EMPTY;
   }
   function clear() { grid.fill(EMPTY); }
+  // Organic ice blob covering roughly the area of a size x size square: a
+  // circle whose radius wobbles with a few random harmonics, plus ragged
+  // edges and a few stray crystals around it. New shape on every call.
   function iceSeed(size = Math.max(4, Math.round(Math.min(W, H) / 4))) {
-    const x0 = (W - size) >> 1, y0 = (H - size) >> 1;
-    for (let y = y0; y < y0 + size; y++) for (let x = x0; x < x0 + size; x++) grid[y * W + x] = ICE;
+    const waves = [];
+    for (let k = 2; k <= 6; k++) waves.push({ k, a: (Math.random() * 0.22) / Math.sqrt(k - 1), ph: Math.random() * Math.PI * 2 });
+    const wobble = th => { let f = 1; for (const w of waves) f += w.a * Math.sin(w.k * th + w.ph); return Math.max(0.35, f); };
+    // scale so the blob's area matches size^2: area = 0.5 * R^2 * integral of wobble^2
+    let m = 0;
+    for (let i = 0; i < 360; i++) m += wobble(i / 360 * Math.PI * 2) ** 2;
+    const R = size / Math.sqrt(Math.PI * (m / 360));
+    const cx = W / 2 + (Math.random() - 0.5) * size * 0.3;
+    const cy = H / 2 + (Math.random() - 0.5) * size * 0.3;
+    const reach = Math.ceil(R * 1.8) + 2;
+    for (let y = Math.floor(cy - reach); y <= cy + reach; y++) for (let x = Math.floor(cx - reach); x <= cx + reach; x++) {
+      if (x < 0 || x >= W || y < 0 || y >= H) continue;
+      const dx = x + 0.5 - cx, dy = y + 0.5 - cy;
+      const d = Math.hypot(dx, dy) / (R * wobble(Math.atan2(dy, dx)));    // 1 = on the outline
+      const p = d < 0.85 ? 1 : d < 1.15 ? (1.15 - d) / 0.3 : d < 1.5 ? 0.04 : 0;
+      if (Math.random() < p) grid[y * W + x] = ICE;
+    }
   }
   function freezeAll() { for (let i = 0; i < grid.length; i++) if (grid[i] === LIQUID) grid[i] = ICE; }
   function meltAll()   { for (let i = 0; i < grid.length; i++) if (grid[i] === ICE) grid[i] = LIQUID; }
@@ -126,6 +144,7 @@ export function createSim(canvas, { cols, rows, cell = 12 } = {}) {
   }
 
   randomize(0.3);
+  iceSeed();
   return {
     W, H, tick, draw, update, randomize, clear, iceSeed, freezeAll, meltAll, paintAt,
     setParams(p) { params = p; },

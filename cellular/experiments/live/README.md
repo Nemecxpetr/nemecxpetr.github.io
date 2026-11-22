@@ -6,6 +6,11 @@
 - `sim.js`: the phase CA from 03_phase, shared by both pages.
 - `net.js`: the connection between admin and players (local or Firebase).
 - `config.js`: Firebase config. `null` means local mode.
+- QR code for the chooser page: `assets/qr_07_live.svg` (print) and `assets/qr_07_live.png`.
+  Made with `segno` (`segno.make(url, error='h')`).
+- Every phone starts with random liquid plus an organic ice seed (`iceSeed()` in `sim.js`, a new
+  shape each time). The admin's **ice seed** button drops another one.
+- Article about the piece (Giants N.2): `articles/giants-n2/`.
 
 ## Roles
 
