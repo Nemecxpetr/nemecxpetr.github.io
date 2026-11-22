@@ -3,7 +3,7 @@
 - `../07_live.html`: the **player** page. The audience opens it and picks **cosi** or **čímsi**.
   `07_live.html#cosi` / `#cimsi` skip the chooser (useful for QR codes).
 - `../07_live_admin.html`: the **admin** page. Don't link it anywhere.
-- `sim.js`: the phase CA from 03_phase, shared by both pages.
+- `sim.js`: the phase CA from 03_phase plus the touch layer and touch map, shared by both pages.
 - `net.js`: the connection between admin and players (local or Firebase).
 - `config.js`: Firebase config. `null` means local mode.
 - QR code for the chooser page: `assets/qr_07_live.svg` (print) and `assets/qr_07_live.png`.
@@ -37,6 +37,49 @@ Each role has its own profile (`PROFILES` in `sim.js`):
 **pause** doesn't stop time dead: the simulation eases to a stop over ~3 s (and back up over ~2 s on
 **run**).
 
+## Touch: the audience layer
+
+Touching a phone does three things on that phone:
+
+- **Touch layer.** A second CA on top, in the role's touch colour: **cosi cyan** (cold), **čímsi amber**
+  (warm). It's empty until touched. Rules: birth 3–4, surv 2–3, freeze 0.82/nb 2, melt 0.19/nb 6,
+  noise 0, rate 16. It's only born where the touch map is above `need`, so it lives around fresh
+  strokes. It flows while the stroke is fresh, freezes onto ice of either layer as the stroke fades
+  (`fade` clears the frozen cells slowly), and dies out where the map is gone.
+- **Touch map.** It spreads out and fades (`cool`, ~10 s half-life). It shows as a soft blurred glow
+  (its own canvas, `#heat`), and it shifts the base layer's phase locally **against** the role's
+  journey, by up to `span`. On cosi a touch re-freezes the thaw; on čímsi it holds back the freeze
+  (the crystal melts under fingers and regrows elsewhere). `direct` also changes base cells
+  outright: cold freezes liquid on cosi, warmth melts ice on čímsi.
+- **Count.** Every 2 s while touching (plus a heartbeat every 10 s), the phone sends an anonymous
+  8×16 touch map to `live/touch/<role>/<random id>`.
+
+The admin page has a **touch layer + touch map** block per role (same lock / ↺ as the base
+parameters, stored as `tover`). You can also touch a preview to try it out (not sent anywhere).
+
+## Audience feedback, recording
+
+The admin page adds up the phones' touch maps once a second. For each role it shows
+players / touching / touches per minute and a small heat map. It writes a decaying crowd map
+plus `activity` (the share of that role's phones touched in the last 8 s) to `live/crowd`. Two
+switches with strength sliders (`live/fb`), both off by default:
+
+- **shared crowd map**: every phone feels its role's crowd map (touch map plus sparks of its touch
+  colour), so screens react together.
+- **crowd nudge**: activity pushes the role's progress the touch way (cosi colder, čímsi warmer), up
+  to 0.15 × strength, on top of the progress slider. It eases in and out over a few seconds.
+
+**● record** saves a snapshot every 10 s to `/log/<session>` (admin-only: progress, players,
+activity, touches/min, crowd maps). **download log** exports it as JSON.
+
+## More than 100 phones
+
+The free Firebase plan allows 100 live connections. Phones use a live connection while fewer than
+`WS_CAP` = 80 are live (the admin page publishes the count in `live/net`). Beyond that they poll
+the state over HTTPS every ~4 s (short requests, no slot held), and they react up to ~4 s later.
+Phones move between the two on their own as the room fills and empties. A phone that can't get a
+live slot within 10 s polls too. The admin header shows `live n/80 · light m`.
+
 Untick **linked** to steer the two roles separately. **glide** sets how long phones take to
 reach a new value. Every phone follows the same clock, so a 10-minute glide stays in sync and
 latecomers join mid-glide.
@@ -62,4 +105,5 @@ Adding `?local` to both URLs forces local mode even after Firebase is configured
    `PASTE_ADMIN_UID` → **Publish**.
 
 After that, only your Google account can change anything. Players can only read, plus register
-themselves in the player count.
+themselves in the player count and write their own anonymous touch summary (size-checked).
+**Whenever `database.rules.json` changes, paste it into the console again → Publish.**

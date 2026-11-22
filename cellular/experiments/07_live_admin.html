@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="../../favicon_1.png" />
   <meta name="robots" content="noindex" />
   <style>
-    :root { --fg: #8f8; --dim: #5a5; --faint: #353; --bg: #000; --panel: #050a05; --warn: #f86; --cold: #9cf; --warm: #fc8; }
+    :root { --fg: #8f8; --dim: #5a5; --faint: #353; --bg: #000; --panel: #050a05; --warn: #f86; --cold: #9cf; --warm: #fc8; --amber: #fb6; --cyan: #3ee6d0; }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--fg); font: 13px monospace; padding: 12px 16px 40px; }
     h1 { font-size: 15px; margin: 0; font-weight: normal; }
@@ -16,6 +16,7 @@
     button:hover { background: #1a2a1a; }
     button.on { background: #1f3a1f; }
     button.danger { border-color: #844; }
+    button.rec.on { background: #3a1414; border-color: #a44; color: #f99; }
     input[type=range] { width: 100%; accent-color: #6c6; }
     input[type=number] { font: 13px monospace; width: 70px; background: #111; color: var(--fg); border: 1px solid #484; border-radius: 4px; padding: 6px; }
     .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -28,15 +29,21 @@
     .big { font-size: 22px; }
     .master input[type=range] { height: 36px; }
     .scale { display: flex; justify-content: space-between; color: var(--dim); font-size: 12px; }
-    .cold { color: var(--cold); } .warm { color: var(--warm); }
+    .cold { color: var(--cold); } .warm { color: var(--warm); } .amber { color: var(--amber); } .cyan { color: var(--cyan); }
     .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 760px) { .roles { grid-template-columns: 1fr; } }
     .role h2 { font-size: 18px; margin: 0; font-weight: normal; }
     .preview { display: flex; gap: 12px; margin: 10px 0; }
-    .preview canvas { height: 220px; aspect-ratio: 36 / 64; border: 1px solid var(--faint); image-rendering: pixelated; flex: none; }
+    .pv { position: relative; height: 220px; aspect-ratio: 36 / 64; border: 1px solid var(--faint); flex: none; overflow: hidden; touch-action: none; }
+    .pv canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .pv canvas.cells { image-rendering: pixelated; }
+    .pv canvas.heat { pointer-events: none; image-rendering: auto; filter: blur(5px); mix-blend-mode: screen; }
     .readout { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
     .bar { height: 6px; background: #111; border-radius: 3px; overflow: hidden; }
     .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--cold), var(--warm)); }
+    .aud { display: flex; gap: 10px; align-items: flex-start; margin-top: 4px; }
+    .aud canvas { width: 48px; height: 96px; border: 1px solid var(--faint); image-rendering: auto; flex: none; background: #000; }
+    .aud .s { line-height: 1.5; }
     details { margin-top: 8px; }
     summary { cursor: pointer; color: var(--dim); }
     .param { display: grid; grid-template-columns: 80px 1fr 52px 22px; gap: 6px; align-items: center; margin: 4px 0; }
@@ -44,6 +51,7 @@
     .param.locked .k, .param.locked .v { color: var(--warm); }
     .param:not(.locked) input { opacity: 0.55; }
     .param button { padding: 2px 4px; font-size: 11px; }
+    .fb { display: grid; grid-template-columns: 190px 1fr 40px; gap: 8px; align-items: center; margin: 6px 0; max-width: 620px; }
     code { color: var(--fg); background: #111; padding: 1px 4px; border-radius: 3px; word-break: break-all; }
   </style>
 </head>
@@ -51,7 +59,8 @@
 <header>
   <h1>cellular · live admin</h1>
   <div class="row"><span id="dot"></span><span id="status">connecting…</span></div>
-  <div class="row">players: <b>cosi <span id="n_cosi">0</span></b> · <b>čímsi <span id="n_cimsi">0</span></b></div>
+  <div class="row">players: <b>cosi <span id="n_cosi">0</span></b> · <b>čímsi <span id="n_cimsi">0</span></b>
+    <span class="muted" id="links_n"></span></div>
   <div class="row" id="authBox"></div>
 </header>
 <div class="muted" id="links" style="margin-top:6px"></div>
@@ -83,21 +92,42 @@
   </div>
 </div>
 
+<div class="panel">
+  <div class="row" style="justify-content:space-between">
+    <span>audience <span class="muted">— touches go against each role's journey: cosi's are <span class="cyan">cold (cyan)</span>, čímsi's <span class="amber">warm (amber)</span></span></span>
+  </div>
+  <div class="fb">
+    <label class="row"><input type="checkbox" id="share"> shared crowd map</label>
+    <input type="range" id="shareK" min="0" max="1" step="0.05"><span id="shareV"></span>
+  </div>
+  <div class="muted" style="margin:-4px 0 6px">every phone feels where its role's audience touches (touch map + sparks of its touch colour)</div>
+  <div class="fb">
+    <label class="row"><input type="checkbox" id="nudge"> crowd nudge</label>
+    <input type="range" id="nudgeK" min="0" max="1" step="0.05"><span id="nudgeV"></span>
+  </div>
+  <div class="muted" style="margin:-4px 0 6px">the share of a role's phones being touched pushes its progress the touch way: cosi colder, čímsi warmer (up to 0.15 × strength)</div>
+  <div class="row" style="margin-top:10px">
+    <button class="rec" id="rec">● record</button>
+    <span id="recInfo" class="muted">not recording</span>
+    <button id="download">download log</button>
+  </div>
+</div>
+
 <div class="roles" id="roles"></div>
 
-<p class="muted" style="margin-top:16px">keys: space run/pause all · [ / ] progress −/+ 0.02 · h hold</p>
+<p class="muted" style="margin-top:16px">keys: space run/pause all · [ / ] progress −/+ 0.02 · h hold · touch a preview to test the touch layer</p>
 
 <script type="module">
-import { createSim, paramsFor, phaseAt, PARAM_RANGES, clampParam } from './live/sim.js';
-import { connect, ROLES, ROLE_LABEL } from './live/net.js';
+import { createSim, paramsFor, paramsTable, phaseAt, nudgedPhase, PARAM_RANGES, clampParam,
+         TOUCH_RANGES, TOUCH_COLORS, clampTouch, touchParamsFor, MAP_W, MAP_H, encodeMap, decodeMap } from './live/sim.js';
+import { connect, ROLES, ROLE_LABEL, WS_CAP } from './live/net.js';
 
 const $ = id => document.getElementById(id);
-const net = await connect();
+const net = await connect('admin');
 net.becomeAdmin();
 
 // ---- header: status, auth, player links ----------------------------------
 net.on('status', s => { $('dot').classList.toggle('ok', s.ok); $('status').textContent = `${net.mode} · ${s.text}`; $('status').className = s.ok ? '' : 'err'; });
-net.on('presence', c => { $('n_cosi').textContent = c.cosi; $('n_cimsi').textContent = c.cimsi; });
 
 const playerUrl = new URL('07_live.html' + location.search, location.href).href;
 $('links').innerHTML = `player page: <a href="${playerUrl}" target="_blank">${playerUrl}</a>` +
@@ -148,11 +178,12 @@ function setTarget(role, to) {
 function setProgress(t) { setTarget('cosi', t); if (linked) setTarget('cimsi', 1 - t); }
 function hold(role) { const r = cur(role), p = curPhase(role); net.writeRole(role, { ...r, from: p, to: p, start: net.now(), dur: 0 }); }
 function setRunning(role, running) { net.writeRole(role, { ...cur(role), running }); }
-function setOverride(role, k, v) {
-  throttle('o' + role, () => {
-    const r = cur(role), over = { ...r.over };
-    if (v == null) delete over[k]; else over[k] = v;
-    net.writeRole(role, { ...r, over });
+// field: 'over' (base layer) or 'tover' (touch layer)
+function setOverride(role, field, k, v) {
+  throttle(field + role, () => {
+    const r = cur(role), o = { ...(r[field] || {}) };
+    if (v == null) delete o[k]; else o[k] = v;
+    net.writeRole(role, { ...r, [field]: o });
   });
 }
 
@@ -179,6 +210,30 @@ document.addEventListener('click', e => {
   net.sendCmd(b.dataset.cmd, b.dataset.role);
 });
 
+// ---- audience feedback ------------------------------------------------------
+const fbNow = () => net.getState().fb;
+const writeFb = patch => throttle('fb', () => net.writeFb({ ...fbNow(), ...patch }), 100);
+$('share').addEventListener('change', e => writeFb({ share: e.target.checked }));
+$('nudge').addEventListener('change', e => writeFb({ nudge: e.target.checked }));
+$('shareK').addEventListener('input', e => { touched('shareK'); writeFb({ shareK: +e.target.value }); });
+$('nudgeK').addEventListener('input', e => { touched('nudgeK'); writeFb({ nudgeK: +e.target.value }); });
+
+// ---- param rows (base + touch layer) ----------------------------------------
+function paramRows(box, ranges, clampFn, role, field) {
+  const rows = {};
+  for (const k in ranges) {
+    const [min, max, step] = ranges[k];
+    const row = document.createElement('div'); row.className = 'param';
+    row.innerHTML = `<span class="k">${k}</span><input type="range" min="${min}" max="${max}" step="${step}"><span class="v"></span>`;
+    const input = row.querySelector('input'), out = row.querySelector('.v');
+    input.addEventListener('input', () => { touched(field + role + k); setOverride(role, field, k, clampFn(k, +input.value)); });
+    row.append(btn('↺', () => setOverride(role, field, k, null)));
+    box.append(row);
+    rows[k] = { row, input, out };
+  }
+  return rows;
+}
+
 // ---- role cards -----------------------------------------------------------
 const cards = {};
 const dir = { cosi: '<span class="cold">cold</span> → <span class="warm">warm</span>', cimsi: '<span class="warm">warm</span> → <span class="cold">cold</span>' };
@@ -188,24 +243,37 @@ for (const role of ROLES) {
   el.innerHTML = `
     <div class="row" style="justify-content:space-between"><h2>${ROLE_LABEL[role]}</h2><span class="muted">${dir[role]}</span></div>
     <div class="preview">
-      <canvas></canvas>
+      <div class="pv"><canvas class="cells"></canvas><canvas class="heat"></canvas></div>
       <div class="readout">
         <div>now <span class="big" data-now>0.00</span> <span class="muted" data-eta></span></div>
         <div class="bar"><i data-bar></i></div>
-        <div class="muted">target <span data-tval>0.00</span></div>
+        <div class="muted">target <span data-tval>0.00</span> <span data-nudge></span></div>
         <input type="range" min="0" max="1" step="0.01" data-target>
         <div class="row" data-buttons></div>
+        <div class="aud"><canvas width="${MAP_W}" height="${MAP_H}" data-map></canvas><div class="s muted" data-aud></div></div>
       </div>
     </div>
     <details><summary>parameters (drag = lock value, ↺ = follow phase again)</summary><div data-params></div>
-      <div class="row" style="margin-top:6px" data-pbuttons></div></details>`;
+      <div class="row" style="margin-top:6px" data-pbuttons></div></details>
+    <details><summary><span class="${role === 'cosi' ? 'cyan' : 'amber'}">touch layer</span> + touch map</summary><div data-tparams></div>
+      <div class="row" style="margin-top:6px" data-tbuttons></div></details>`;
   $('roles').append(el);
   const q = s => el.querySelector(s);
+  const pv = q('.pv');
   const c = cards[role] = {
-    sim: createSim(q('canvas'), { cols: 36, rows: 64, seed: paramsFor(curPhase(role), cur(role).over, role).ice_target < 0 }),
-    now: q('[data-now]'), eta: q('[data-eta]'), bar: q('[data-bar]'), tval: q('[data-tval]'), target: q('[data-target]'),
-    params: {},
+    sim: createSim(q('canvas.cells'), { cols: 36, rows: 64, role, heatCanvas: q('canvas.heat'), seed: paramsFor(curPhase(role), cur(role).over, role).ice_target < 0 }),
+    now: q('[data-now]'), eta: q('[data-eta]'), bar: q('[data-bar]'), tval: q('[data-tval]'), target: q('[data-target]'), nudge: q('[data-nudge]'),
+    map: q('[data-map]').getContext('2d'), aud: q('[data-aud]'),
+    activity: 0, crowdKey: null, crowdMap: null,
   };
+  c.mapImg = c.map.createImageData(MAP_W, MAP_H);
+  // touch the preview to try the touch layer here (local only, not sent)
+  const strokes = new Map();
+  pv.addEventListener('pointerdown', e => { pv.setPointerCapture(e.pointerId); c.sim.touchAt(e.clientX, e.clientY); strokes.set(e.pointerId, [e.clientX, e.clientY]); c.sim.takeTouches(); });
+  pv.addEventListener('pointermove', e => { const f = strokes.get(e.pointerId); if (f) { c.sim.touchAt(e.clientX, e.clientY, f); strokes.set(e.pointerId, [e.clientX, e.clientY]); c.sim.takeTouches(); } });
+  pv.addEventListener('pointerup', e => strokes.delete(e.pointerId));
+  pv.addEventListener('pointercancel', e => strokes.delete(e.pointerId));
+
   c.target.addEventListener('input', () => {
     touched('t' + role);
     const v = +c.target.value;
@@ -218,18 +286,10 @@ for (const role of ROLES) {
   for (const [cmd, label] of [['random', 'random'], ['seed', 'ice seed'], ['freeze', 'freeze'], ['melt', 'melt'], ['clear', 'clear']]) {
     const b = btn(label); b.dataset.cmd = cmd; b.dataset.role = role; bx.append(b);
   }
-  const pbox = q('[data-params]');
-  for (const k in PARAM_RANGES) {
-    const [min, max, step] = PARAM_RANGES[k];
-    const row = document.createElement('div'); row.className = 'param';
-    row.innerHTML = `<span class="k">${k}</span><input type="range" min="${min}" max="${max}" step="${step}"><span class="v"></span>`;
-    const input = row.querySelector('input'), out = row.querySelector('.v');
-    input.addEventListener('input', () => { touched('p' + role + k); setOverride(role, k, clampParam(k, +input.value)); });
-    row.append(btn('↺', () => setOverride(role, k, null)));
-    pbox.append(row);
-    c.params[k] = { row, input, out };
-  }
+  c.params = paramRows(q('[data-params]'), PARAM_RANGES, clampParam, role, 'over');
   q('[data-pbuttons]').append(btn('↺ all follow phase', () => net.writeRole(role, { ...cur(role), over: {} })));
+  c.tparams = paramRows(q('[data-tparams]'), TOUCH_RANGES, clampTouch, role, 'tover');
+  q('[data-tbuttons]').append(btn('↺ touch defaults', () => net.writeRole(role, { ...cur(role), tover: {} })));
 }
 
 // ---- reflect shared state into the UI -------------------------------------
@@ -243,8 +303,14 @@ net.on('state', st => {
     c.runBtn.textContent = r.running === false ? 'run' : 'pause';
     c.runBtn.classList.toggle('on', r.running === false);
     for (const k in c.params) c.params[k].row.classList.toggle('locked', r.over && r.over[k] != null);
+    for (const k in c.tparams) c.tparams[k].row.classList.toggle('locked', r.tover && r.tover[k] != null);
   }
   if (!busy('master')) $('master').value = st.roles.cosi.to;
+  const fb = st.fb;
+  $('share').checked = !!fb.share; $('nudge').checked = !!fb.nudge;
+  if (!busy('shareK')) $('shareK').value = fb.shareK;
+  if (!busy('nudgeK')) $('nudgeK').value = fb.nudgeK;
+  $('shareV').textContent = (+fb.shareK).toFixed(2); $('nudgeV').textContent = (+fb.nudgeK).toFixed(2);
   const cmd = st.cmd;
   if (cmd && cmd.id !== lastCmdId) {
     lastCmdId = cmd.id;
@@ -252,26 +318,155 @@ net.on('state', st => {
   }
 });
 
+// ---- audience: add up the phones' touch summaries ---------------------------
+// Each phone sends touch/<role>/<id> = {t, n, m} every 2 s while touching and
+// a heartbeat every 10 s. Once a second this combines them per role into the
+// crowd map (decaying sum) + activity (share of phones touched in the last
+// 8 s), writes that to live/crowd for the phones, and tidies stale entries.
+let touchData = { cosi: {}, cimsi: {} }, presence = { cosi: 0, cimsi: 0 };
+net.on('touch', t => { touchData = t; });
+net.on('presence', p => { presence = p; });
+const crowdAcc = { cosi: new Float32Array(MAP_W * MAP_H), cimsi: new Float32Array(MAP_W * MAP_H) };
+const seenT = new Map(), tpmLog = { cosi: [], cimsi: [] };
+const stats = { cosi: { live: 0, poll: 0, players: 0, touching: 0, a: 0, tpm: 0 }, cimsi: { live: 0, poll: 0, players: 0, touching: 0, a: 0, tpm: 0 } };
+let lastCrowd = '', lastWs = -1;
+
+function aggregate() {
+  const now = net.now(), crowd = {}, drop = [];
+  for (const role of ROLES) {
+    const acc = crowdAcc[role], entries = touchData[role] || {}, liveIds = presence.ids ? presence.ids[role] : null;
+    for (let i = 0; i < acc.length; i++) acc[i] *= 0.85;
+    let poll = 0, touching = 0, aliveIds = 0;
+    for (const id in entries) {
+      const e = entries[id];
+      if (!e || typeof e.t !== 'number') continue;
+      const age = now - e.t;
+      if (age > 60000) { drop.push([role, id]); seenT.delete(role + '/' + id); continue; }
+      if (age < 25000) { aliveIds++; if (liveIds && !liveIds[id]) poll++; }
+      if (age < 8000 && e.n > 0) touching++;
+      const key = role + '/' + id;
+      if (seenT.get(key) !== e.t) {
+        seenT.set(key, e.t);
+        if (e.n > 0) { const m = decodeMap(e.m); for (let i = 0; i < acc.length; i++) acc[i] += m[i]; tpmLog[role].push([now, e.n]); }
+      }
+    }
+    const live = liveIds ? Object.keys(liveIds).length : Math.max(presence[role] || 0, aliveIds);
+    const players = live + poll;
+    tpmLog[role] = tpmLog[role].filter(([t]) => now - t < 60000);
+    const a = players ? Math.min(1, touching / players) : 0;
+    stats[role] = { live, poll, players, touching, a, tpm: tpmLog[role].reduce((s, [, n]) => s + n, 0) };
+    crowd[role] = { m: encodeMap(Array.from(acc, v => v * 35)), a: +a.toFixed(2) };
+  }
+  const json = JSON.stringify(crowd);
+  if (json !== lastCrowd) { lastCrowd = json; for (const r of ROLES) crowd[r].t = Math.round(now); net.writeCrowd(crowd); }
+  const ws = stats.cosi.live + stats.cimsi.live;
+  if (ws !== lastWs) { lastWs = ws; net.writeNet({ ws }); }
+  net.dropTouch(drop);
+
+  $('n_cosi').textContent = stats.cosi.players; $('n_cimsi').textContent = stats.cimsi.players;
+  const poll = stats.cosi.poll + stats.cimsi.poll;
+  $('links_n').textContent = net.mode === 'firebase' ? `(live ${ws}/${WS_CAP}${poll ? ` · light ${poll}` : ''})` : '';
+  for (const role of ROLES) {
+    const s = stats[role], c = cards[role];
+    c.aud.innerHTML = `audience ${s.players}${s.poll ? ` <span class="muted">(${s.live} live · ${s.poll} light)</span>` : ''}<br>` +
+      `touching <span class="${role === 'cosi' ? 'cyan' : 'amber'}">${s.touching}</span> · ${Math.round(s.a * 100)}%<br>${s.tpm} touches/min`;
+    drawMap(c, crowdAcc[role], TOUCH_COLORS[role].cells[1]);
+  }
+  record(now);
+}
+setInterval(aggregate, 1000);
+
+function drawMap(c, acc, col) {
+  const d = c.mapImg.data;
+  for (let i = 0; i < acc.length; i++) {
+    const v = Math.min(1, acc[i]);
+    d[i * 4] = col[0] * v; d[i * 4 + 1] = col[1] * v; d[i * 4 + 2] = col[2] * v; d[i * 4 + 3] = 255;
+  }
+  c.map.putImageData(c.mapImg, 0, 0);
+}
+
+// ---- recording ----------------------------------------------------------------
+// A snapshot every 10 s to /log/<session>/<time> (admin-only), also kept here.
+let rec = null, lastSession = null;
+try { lastSession = localStorage.getItem('cellular-live-last-session'); } catch {}
+function recInfo() {
+  $('rec').classList.toggle('on', !!rec);
+  $('rec').textContent = rec ? '■ stop' : '● record';
+  $('recInfo').textContent = rec ? `recording ${rec.session} · ${Object.keys(rec.mem).length} snapshots`
+    : lastSession ? `last session ${lastSession}` : 'not recording';
+}
+$('rec').addEventListener('click', () => {
+  if (rec) { rec = null; recInfo(); return; }
+  const session = new Date(net.now()).toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  rec = { session, mem: {}, last: 0 };
+  lastSession = session;
+  try { localStorage.setItem('cellular-live-last-session', session); } catch {}
+  recInfo();
+});
+function record(now) {
+  if (!rec || now - rec.last < 10000) return;
+  rec.last = now;
+  const st = net.getState(), snap = { t: Math.round(now), fb: st.fb, roles: {} };
+  for (const role of ROLES) {
+    const r = st.roles[role], s = stats[role];
+    snap.roles[role] = {
+      progress: +phaseAt(r, now).toFixed(3), phase: +nudgedPhase(phaseAt(r, now), role, st.fb, cards[role].activity).toFixed(3),
+      target: r.to, running: r.running !== false, players: s.players, live: s.live, poll: s.poll,
+      touching: s.touching, activity: +s.a.toFixed(2), tpm: s.tpm, crowd: encodeMap(Array.from(crowdAcc[role], v => v * 35)),
+    };
+  }
+  rec.mem[snap.t] = snap;
+  net.writeLog(rec.session, snap.t, snap);
+  recInfo();
+}
+$('download').addEventListener('click', async () => {
+  const session = (rec && rec.session) || lastSession;
+  if (!session) { alert('Nothing recorded yet.'); return; }
+  let data = null;
+  try { data = await net.readLog(session); } catch (e) { console.warn(e); }
+  data = { ...(data || {}), ...((rec && rec.session === session && rec.mem) || {}) };
+  const rows = Object.values(data).sort((a, b) => a.t - b.t);
+  const blob = new Blob([JSON.stringify({ session, map: `${MAP_W}x${MAP_H} base-36 per cell, row by row`, rows }, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `cellular-live-${session}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+recInfo();
+
 // ---- per-frame: previews and live readouts --------------------------------
 let last = performance.now();
 function frame(t) {
   const dt = (t - last) / 1000; last = t;
-  const now = net.now();
+  const now = net.now(), st = net.getState(), fb = st.fb;
   for (const role of ROLES) {
-    const r = cur(role), c = cards[role], p = phaseAt(r, now), params = paramsFor(p, r.over, role, now);
-    c.sim.setParams(params);
+    const r = cur(role), c = cards[role], p0 = phaseAt(r, now);
+    const crowd = st.crowd && st.crowd[role], goalA = (crowd && +crowd.a) || 0;
+    c.activity += (goalA - c.activity) * (1 - Math.exp(-Math.min(dt, 0.1) / (goalA > c.activity ? 2 : 4)));
+    const p = nudgedPhase(p0, role, fb, c.activity);
+    const tp = touchParamsFor(r.tover), table = paramsTable(p, r.over, role, now, tp.span), params = table[0];
+    const key = crowd && crowd.m;
+    if (key !== c.crowdKey) { c.crowdKey = key; c.crowdMap = key ? decodeMap(key) : null; }
+    c.sim.setTouchParams(tp);
+    c.sim.setParams(table);
+    c.sim.setCrowd(fb.share ? c.crowdMap : null, fb.share ? +fb.shareK || 0 : 0);
     c.sim.tick(dt, r.running !== false);
     c.sim.draw();
     c.now.textContent = p.toFixed(2);
+    c.nudge.textContent = Math.abs(p - p0) >= 0.005 ? `· crowd ${p > p0 ? '+' : '−'}${Math.abs(p - p0).toFixed(2)}` : '';
     c.bar.style.width = (p * 100).toFixed(1) + '%';
     const left = r.dur > 0 ? Math.max(0, r.start + r.dur - now) / 1000 : 0;
     c.eta.textContent = left > 0 ? `gliding · ${left >= 60 ? Math.floor(left / 60) + 'm ' : ''}${Math.ceil(left % 60)}s left` : (r.running === false ? 'paused' : '');
     for (const k in c.params) {
       const { input, out } = c.params[k];
-      if (!busy('p' + role + k)) input.value = params[k];
+      if (!busy('over' + role + k)) input.value = params[k];
       out.textContent = k === 'ice_target' && params[k] < 0 ? 'off'
         : k === 'melt_nb' && params.melt_on !== params.melt_nb ? params.melt_on + '*'   // * = swung up right now
         : Number(params[k].toFixed(3));
+    }
+    for (const k in c.tparams) {
+      const { input, out } = c.tparams[k];
+      if (!busy('tover' + role + k)) input.value = tp[k];
+      out.textContent = Number((+tp[k]).toFixed(4));
     }
   }
   $('masterVal').textContent = curPhase('cosi').toFixed(2);

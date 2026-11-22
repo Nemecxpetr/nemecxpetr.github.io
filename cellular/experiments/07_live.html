@@ -12,13 +12,24 @@
     html, body { margin: 0; height: 100%; background: #000; color: #8f8; font: 14px monospace;
                  overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
     #cv { display: block; position: fixed; inset: 0; width: 100vw; height: 100dvh; touch-action: none; image-rendering: pixelated; }
-    #choose { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    /* touch map: same grid, but smoothed + blurred into a gradient and added on top of the cells */
+    #heat { position: fixed; inset: 0; width: 100vw; height: 100dvh; pointer-events: none; image-rendering: auto;
+            filter: blur(14px); mix-blend-mode: screen; }
+    #choose { position: fixed; inset: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
               gap: 24px; background: #000; z-index: 2; padding: 16px; box-sizing: border-box; }
     #choose p { margin: 0 0 8px; color: #6a6; text-align: center; }
     #choose button { font: 32px monospace; width: min(80vw, 320px); padding: 28px 0; background: #050a05; color: #8f8;
                      border: 1px solid #484; border-radius: 8px; }
     #choose button:active { background: #132313; }
     #choose small { color: #464; text-align: center; }
+    #choose .note { width: min(86vw, 360px); font-size: 12px; line-height: 1.45; text-align: left; margin: 0; }
+    #choose .note span { display: block; }
+    #choose .note span + span { margin-top: 4px; }
+    #warn { color: #fb6; border: 1px solid #a73; border-radius: 6px; padding: 8px 10px; box-sizing: border-box; }
+    #warn b { font-weight: normal; letter-spacing: 0.05em; }
+    #anon { color: #6a6; }
+    #anon span { color: #464; margin-top: 4px; }
+    @media (max-height: 640px) { #choose { gap: 14px; } #choose button { padding: 18px 0; font-size: 28px; } }
     #hud { position: fixed; left: calc(8px + env(safe-area-inset-left)); bottom: calc(8px + env(safe-area-inset-bottom));
            display: flex; align-items: center; gap: 8px; opacity: 0.28; z-index: 1; }
     #hud button { font: 12px monospace; background: #000a; color: #8f8; border: 1px solid #353; border-radius: 4px; padding: 6px 8px; }
@@ -29,35 +40,46 @@
 </head>
 <body>
 <canvas id="cv"></canvas>
+<canvas id="heat"></canvas>
 <div id="choose">
+  <div class="note" id="warn" role="note">
+    <span><b>⚠ POZOR</b> · obraz bliká a rychle se mění. Při citlivosti na blikající světlo (fotosenzitivní epilepsie) prosím nesleduj.</span>
+    <span><b>⚠ WARNING</b> · flashing and rapidly changing images. If you are sensitive to flashing light (photosensitive epilepsy), please don't watch.</span>
+  </div>
   <p>vyber si / choose</p>
   <button data-role="cosi">cosi</button>
   <button data-role="cimsi">čímsi</button>
   <small>nech obrazovku zapnutou · keep the screen on</small>
+  <div class="note" id="anon">
+    Anonymní: žádné jméno, účet ani nic, co by tě identifikovalo. Sdílí se jen počet připojených telefonů a hrubá mapa doteků.
+    <span>Anonymous: no name, no account, nothing that identifies you. Only the number of connected phones and a coarse map of touches is shared.</span>
+  </div>
 </div>
 <div id="hud" hidden><span id="dot"></span><button id="switch">⟲ <span id="roleName"></span></button></div>
 <div id="msg"></div>
 
 <script type="module">
-import { createSim, paramsFor, phaseAt, LIQUID } from './live/sim.js';
+import { createSim, paramsFor, paramsTable, touchParamsFor, nudgedPhase, decodeMap, phaseAt } from './live/sim.js';
 import { connect, ROLES, ROLE_LABEL } from './live/net.js';
 
 const cv = document.getElementById('cv');
+const heatCv = document.getElementById('heat');
 const choose = document.getElementById('choose');
 const hud = document.getElementById('hud');
 const dot = document.getElementById('dot');
 const msg = document.getElementById('msg');
 
-const net = await connect();
+const net = await connect('player');
 let role = null, leave = null, lastCmdId = null, wakeLock = null;
 
-// grid sized to this phone's screen, rebuilt on rotation
-let sim = createSim(cv, { cell: 12 });
 const paramsNow = r => { const ramp = net.getState().roles[r || 'cosi']; return paramsFor(phaseAt(ramp, net.now()), ramp.over, r || 'cosi', net.now()); };
 // big starting seed, except where the ice is steered (čímsi grows its own small one)
 const wantsSeed = () => !role || paramsNow(role).ice_target < 0;
+// grid sized to this phone's screen, rebuilt on rotation
+const build = () => createSim(cv, { cell: 12, seed: wantsSeed(), role: role || 'cosi', heatCanvas: heatCv });
+let sim = build();
 let resizeTimer;
-addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { sim = createSim(cv, { cell: 12, seed: wantsSeed() }); }, 250); });
+addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { sim = build(); }, 250); });
 
 net.on('status', s => { dot.classList.toggle('ok', s.ok); msg.textContent = s.ok || !role ? '' : s.text; });
 
@@ -77,6 +99,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function start(r, fromTap) {
   if (!ROLES.includes(r)) return;
   role = r;
+  sim.setRole(role);
   sim.fresh(wantsSeed());
   lastCmdId = net.getState().cmd && net.getState().cmd.id;
   if (leave) leave();
@@ -100,22 +123,57 @@ document.getElementById('switch').addEventListener('click', () => {
 const hashRole = location.hash.slice(1);
 if (ROLES.includes(hashRole)) start(hashRole, false);
 
-// touch paints liquid on your own screen only (not shared)
-cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); sim.paintAt(e.clientX, e.clientY, LIQUID); });
-cv.addEventListener('pointermove', e => { if (e.buttons) sim.paintAt(e.clientX, e.clientY, LIQUID); });
+// touch: the touch layer (cosi cyan = cold, čímsi amber = warm) + the touch
+// map, which pushes the base layer against the role's journey. Every finger
+// draws its own stroke.
+const strokes = new Map();                       // pointerId -> last [x, y]
+cv.addEventListener('pointerdown', e => {
+  if (!role) return;
+  cv.setPointerCapture(e.pointerId);
+  sim.touchAt(e.clientX, e.clientY);
+  strokes.set(e.pointerId, [e.clientX, e.clientY]);
+});
+cv.addEventListener('pointermove', e => {
+  const from = strokes.get(e.pointerId);
+  if (!from || !role) return;
+  sim.touchAt(e.clientX, e.clientY, from);
+  strokes.set(e.pointerId, [e.clientX, e.clientY]);
+});
+const end = e => strokes.delete(e.pointerId);
+cv.addEventListener('pointerup', end);
+cv.addEventListener('pointercancel', end);
 cv.addEventListener('contextmenu', e => e.preventDefault());
 
-let last = performance.now(), phase = 0;
+// anonymous touch summary for the admin: every 2 s while touching, plus a
+// heartbeat every 10 s (counts this phone as present when it's polling)
+let lastSent = 0;
+setInterval(() => {
+  if (!role) return;
+  const t = sim.takeTouches(), now = Date.now();
+  if (t.n > 0 || now - lastSent > 10000) { net.sendTouch(t); lastSent = now; }
+}, 2000);
+
+let last = performance.now(), activity = 0, crowdKey = null, crowdMap = null;
 // console helper for checking a phone during setup: liveDebug()
 window.liveDebug = () => {
-  const ramp = net.getState().roles[role || 'cosi'], p = phaseAt(ramp, net.now());
-  return { role, phase: +p.toFixed(3), running: ramp.running !== false, params: paramsNow(role), ice: +(sim.countIce() / (sim.W * sim.H)).toFixed(3), mode: net.mode };
+  const st = net.getState(), ramp = st.roles[role || 'cosi'], p = phaseAt(ramp, net.now());
+  return { role, link: net.link(), phase: +p.toFixed(3), nudged: +nudgedPhase(p, role, st.fb, activity).toFixed(3), activity: +activity.toFixed(2),
+    running: ramp.running !== false, params: paramsNow(role), touch: sim.touchParams, ice: +(sim.countIce() / (sim.W * sim.H)).toFixed(3), mode: net.mode };
 };
 function frame(t) {
   const dt = (t - last) / 1000; last = t;
-  const ramp = net.getState().roles[role || 'cosi'];
-  phase = phaseAt(ramp, net.now());
-  sim.setParams(paramsFor(phase, ramp.over, role || 'cosi', net.now()));
+  const st = net.getState(), r = role || 'cosi', ramp = st.roles[r], now = net.now();
+  const crowd = role && st.crowd ? st.crowd[role] : null, fb = st.fb || {};
+  // crowd activity eases in/out so the nudge doesn't jump between updates
+  const goalA = (crowd && +crowd.a) || 0;
+  activity += (goalA - activity) * (1 - Math.exp(-Math.min(dt, 0.1) / (goalA > activity ? 2 : 4)));
+  const phase = nudgedPhase(phaseAt(ramp, now), r, fb, activity);
+  const tp = touchParamsFor(ramp.tover);
+  sim.setTouchParams(tp);
+  sim.setParams(paramsTable(phase, ramp.over, r, now, tp.span));
+  const key = crowd && crowd.m;
+  if (key !== crowdKey) { crowdKey = key; crowdMap = key ? decodeMap(key) : null; }
+  sim.setCrowd(fb.share ? crowdMap : null, fb.share ? +fb.shareK || 0 : 0);
   if (role) sim.tick(dt, ramp.running !== false);          // pause eases to a stop
   sim.draw();
   requestAnimationFrame(frame);
