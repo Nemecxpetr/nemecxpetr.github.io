@@ -59,7 +59,7 @@
 <div id="msg"></div>
 
 <script type="module">
-import { createSim, paramsFor, paramsTable, touchParamsFor, nudgedPhase, decodeMap, phaseAt, otherRole } from './live/sim.js';
+import { createSim, paramsFor, paramsTable, touchParamsFor, nudgedPhase, decodeMap, phaseAt, otherRole, IDLE_PARAMS } from './live/sim.js';
 import { connect, ROLES, ROLE_LABEL } from './live/net.js';
 
 const cv = document.getElementById('cv');
@@ -76,7 +76,9 @@ const paramsNow = r => { const ramp = net.getState().roles[r || 'cosi']; return 
 // big starting seed, except where the ice is steered (čímsi grows its own small one)
 const wantsSeed = () => !role || paramsNow(role).ice_target < 0;
 // grid sized to this phone's screen, rebuilt on rotation
-const build = () => createSim(cv, { cell: 12, seed: wantsSeed(), role: role || 'cosi', heatCanvas: heatCv });
+// IDLE (admin switch, between performances): blank screen for free drawing
+const isIdle = () => !!(net.getState().fb || {}).idle;
+const build = () => { const s = createSim(cv, { cell: 12, seed: wantsSeed(), role: role || 'cosi', heatCanvas: heatCv }); if (isIdle()) s.clear(); return s; };
 let sim = build();
 let resizeTimer;
 addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { sim = build(); }, 250); });
@@ -100,7 +102,7 @@ function start(r, fromTap) {
   if (!ROLES.includes(r)) return;
   role = r;
   sim.setRole(role);
-  sim.fresh(wantsSeed());
+  if (isIdle()) sim.clear(); else sim.fresh(wantsSeed());
   lastCmdId = net.getState().cmd && net.getState().cmd.id;
   if (leave) leave();
   leave = net.join(role);
@@ -153,13 +155,13 @@ setInterval(() => {
   if (t.n > 0 || now - lastSent > 10000) { net.sendTouch(t); lastSent = now; }
 }, 2000);
 
-let last = performance.now(), activity = 0, crowdKey = null, crowdMap = null, oKey = null, oMap = null;
+let last = performance.now(), activity = 0, crowdKey = null, crowdMap = null, oKey = null, oMap = null, wasIdle = isIdle(), hintTimer;
 // console helper for checking a phone during setup: liveDebug()
 window.liveDebug = () => {
   const st = net.getState(), ramp = st.roles[role || 'cosi'], p = phaseAt(ramp, net.now());
   return { role, link: net.link(), phase: +p.toFixed(3), nudged: +nudgedPhase(p, role, st.fb, activity).toFixed(3), activity: +activity.toFixed(2),
     crowdAge: st.crowd && st.crowd[role || 'cosi'] ? Math.round((net.now() - st.crowd[role || 'cosi'].t) / 1000) + ' s' : 'none',
-    share: !!(st.fb && st.fb.share), running: ramp.running !== false, params: paramsNow(role), touch: sim.touchParams, ice: +(sim.countIce() / (sim.W * sim.H)).toFixed(3), mode: net.mode };
+    share: !!(st.fb && st.fb.share), idle: isIdle(), running: ramp.running !== false, params: paramsNow(role), touch: sim.touchParams, ice: +(sim.countIce() / (sim.W * sim.H)).toFixed(3), mode: net.mode };
 };
 function frame(t) {
   const dt = (t - last) / 1000; last = t;
@@ -172,15 +174,28 @@ function frame(t) {
   // crowd activity eases in/out so the nudge doesn't jump between updates
   const goalA = (crowd && +crowd.a) || 0;
   activity += (goalA - activity) * (1 - Math.exp(-Math.min(dt, 0.1) / (goalA > activity ? 2 : 4)));
-  const phase = nudgedPhase(phaseAt(ramp, now), r, fb, activity);
+  // IDLE: the water melts away and nothing new grows; drawing and the shared
+  // glow (always on in idle) keep going, pause doesn't apply. Leaving idle
+  // starts a fresh field.
+  const idle = !!fb.idle;
+  if (idle !== wasIdle) {
+    wasIdle = idle;
+    if (!idle && role) sim.fresh(wantsSeed());
+    if (idle && role && !msg.textContent) {
+      msg.textContent = 'kresli · draw'; clearTimeout(hintTimer);
+      hintTimer = setTimeout(() => { if (msg.textContent === 'kresli · draw') msg.textContent = ''; }, 4000);
+    }
+  }
   const tp = touchParamsFor(ramp.tover);
   sim.setTouchParams(tp);
-  sim.setParams(paramsTable(phase, ramp.over, r, now, tp.span));
+  if (idle) sim.setParams(IDLE_PARAMS);
+  else sim.setParams(paramsTable(nudgedPhase(phaseAt(ramp, now), r, fb, activity), ramp.over, r, now, tp.span));
   const key = crowd && crowd.m, okey = ocrowd && ocrowd.m;
   if (key !== crowdKey) { crowdKey = key; crowdMap = key ? decodeMap(key) : null; }
   if (okey !== oKey) { oKey = okey; oMap = okey ? decodeMap(okey) : null; }
-  sim.setCrowd(fb.share ? crowdMap : null, fb.share ? +fb.shareK || 0 : 0, fb.share ? oMap : null);
-  if (role) sim.tick(dt, ramp.running !== false);          // pause eases to a stop
+  const share = fb.share || idle, shareK = fb.share ? +fb.shareK || 0 : idle ? +fb.shareK || 0.5 : 0;
+  sim.setCrowd(share ? crowdMap : null, shareK, share ? oMap : null);
+  if (role) sim.tick(dt, idle || ramp.running !== false);  // pause eases to a stop
   sim.draw();
   requestAnimationFrame(frame);
 }

@@ -37,6 +37,12 @@ const blend = (A, B, t) => { const p = {}; for (const k in A) p[k] = mix(A[k], B
 // cosi (cold -> warm): thaws into sparse liquid (birth 4-7) and then balances
 // on the edge of melting, melt_nb switching back and forth.
 const COSI_WARM = { ...LIQUID_PRESET, birth_lo: 4, birth_hi: 7, melt_nb: 2, melt_swing: 3 };   // melt_nb 2 <-> 5
+// ...and at the very warm end (VAPOUR_AT -> 1) it boils over into vapour: a
+// "Seeds" rule (born on exactly 2, nothing survives), fast and noisy, any ice
+// melts at once. Sparse, restless spray, no ice left.
+const VAPOUR_AT = 0.8;
+const COSI_VAPOUR = { ...LIQUID_PRESET, birth_lo: 2, birth_hi: 2, surv_lo: 8, surv_hi: 0, freeze: 0, freeze_nb: 8,
+  melt: 1, melt_nb: 1, melt_swing: 0, noise: 0.01, rate: 40 };
 
 // čímsi (warm -> cold): stays liquid until SEED_AT of the way cold, then one
 // small seed appears and slowly freezes over the screen. Coverage follows the
@@ -46,7 +52,15 @@ export const SEED_AT = 0.15;                       // coldness where the seed ap
 const CIMSI_COLD = { ...LIQUID_PRESET, birth_lo: 2, surv_hi: 5, freeze: 0.6, freeze_nb: 1, melt: 0.3, melt_nb: 2, noise: 0.003, rate: 16 };
 
 const PROFILES = {
-  cosi: phase => blend(FROZEN, COSI_WARM, phase),
+  cosi: phase => {
+    const p = blend(FROZEN, COSI_WARM, phase), v = smooth(VAPOUR_AT, 1, phase);
+    if (v <= 0) return p;
+    // birth + melting go first (else the liquid dies before the spray starts
+    // and the ice just sits), survival / speed / noise follow
+    const early = smooth(VAPOUR_AT, VAPOUR_AT + 0.1, phase), q = blend(p, COSI_VAPOUR, v);
+    for (const k of ['birth_lo', 'birth_hi', 'melt', 'melt_nb', 'melt_swing', 'freeze', 'freeze_nb']) q[k] = mix(p[k], COSI_VAPOUR[k], early);
+    return q;
+  },
   cimsi: phase => {
     const cold = 1 - phase;
     if (cold < SEED_AT) return { ...LIQUID_PRESET, ice_target: 0 };   // warm: any ice melts away
@@ -56,6 +70,12 @@ const PROFILES = {
     return p;
   },
 };
+
+// IDLE (between performances): the water melts away and dies out over a few
+// seconds and nothing new is born, so the screen is left mostly blank for
+// drawing. Touch layer + glow + crowd maps keep working as usual.
+export const IDLE_PARAMS = { ...BASE, birth_lo: 8, birth_hi: 0, surv_lo: 8, surv_hi: 0, freeze: 0, freeze_nb: 8,
+  melt: 0.06, melt_nb: 0, melt_on: 0, noise: 0, rate: 8 };
 
 export function clampParam(name, v) {
   const [min, max] = PARAM_RANGES[name] || [0, Infinity];

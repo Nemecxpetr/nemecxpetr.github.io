@@ -26,7 +26,9 @@ Each role has its own profile (`PROFILES` in `sim.js`):
 - **cosi** thaws from the frozen preset into sparse liquid (birth 4–7). On the way, `melt_nb` swings
   back and forth (`melt_swing`, 2 ↔ 5 at the warm end, every `swing_s` = 10 s on the shared clock),
   so it balances on the edge of melting instead of just melting. In the admin readout, `*` marks
-  melt_nb while it is swung up.
+  melt_nb while it is swung up. From 0.8 (`VAPOUR_AT`) it boils over into **vapour**: a fast, noisy
+  "Seeds" rule (born on exactly 2, nothing survives, rate 40). Around 0.85–0.87 the last ice goes
+  and the screen becomes a sparse, restless spray up to full warm.
 - **čímsi** stays liquid until 15% cold (`SEED_AT`). Then one small seed appears and freezes over the
   screen. Coverage follows the phase (`ice_target`, starts tiny and picks up), not the clock, so any
   glide length works and a phone that joins late catches up in a few seconds. Going warmer again
@@ -82,6 +84,15 @@ freezing it.
 
 **● record** saves a snapshot every 10 s to `/log/<session>` (admin-only: progress, players,
 activity, touches/min, crowd maps). **download log** exports it as JSON.
+
+## IDLE (between performances)
+
+The **IDLE** switch in the audience panel (`live/fb.idle`) is for before and after the piece. On
+every phone the water melts away and dies out within about 5 s, nothing new grows, and the screen
+stays mostly blank. The audience just draws: their own touch layer and glow work as usual, and the
+shared glow of both crowds is always on in IDLE (at the shared-map strength, 0.5 if unset).
+Progress, pause and crowd nudge don't apply. Phones joining during IDLE start blank and show a
+short "kresli · draw" hint. Switching IDLE off starts every screen fresh at the current progress.
 
 ## More than 100 phones
 
