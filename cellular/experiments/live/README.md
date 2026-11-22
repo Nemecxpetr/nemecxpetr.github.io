@@ -45,7 +45,8 @@ Touching a phone does three things on that phone:
   (warm). It's empty until touched. Rules: birth 3–4, surv 2–3, freeze 0.82/nb 2, melt 0.19/nb 6,
   noise 0, rate 16. It's only born where the touch map is above `need`, so it lives around fresh
   strokes. It flows while the stroke is fresh, freezes onto ice of either layer as the stroke fades
-  (`fade` clears the frozen cells slowly), and dies out where the map is gone.
+  (`fade` clears the frozen cells slowly), and dies out where the map is gone. Its cells are drawn
+  faded over the base layer (`show`, opacity 0.4).
 - **Touch map.** It spreads out and fades (`cool`, ~10 s half-life). It shows as a soft blurred glow
   (its own canvas, `#heat`), and it shifts the base layer's phase locally **against** the role's
   journey, by up to `span`. On cosi a touch re-freezes the thaw; on čímsi it holds back the freeze
@@ -64,10 +65,11 @@ players / touching / touches per minute and a small heat map. It writes a decayi
 plus `activity` (the share of that role's phones touched in the last 8 s) to `live/crowd`. Two
 switches with strength sliders (`live/fb`), both off by default:
 
-- **shared crowd map**: every phone shows both crowds, so screens react together. Its own role's
-  crowd comes in its own colour and touch direction. The other role's crowd comes as a second touch
-  layer and glow in that role's colour, pushing the other way: amber always warms, cyan always
-  cools, and where both crowds touch they tug against each other.
+- **shared crowd map**: every phone shows both crowds' glow, so screens react together. Only the
+  glow (touch map) is shared, never touch-layer cells: those come from the phone's own fingers.
+  Its own role's crowd glows in its own colour and touch direction. The other role's crowd glows in
+  that role's colour and pushes the other way: amber always warms, cyan always cools, and where both
+  crowds touch they tug against each other.
 - **crowd nudge**: activity pushes the role's progress the touch way (cosi colder, čímsi warmer), up
   to 0.15 × strength, on top of the progress slider. It eases in and out over a few seconds.
 

@@ -114,6 +114,7 @@ export function nudgedPhase(phase, role, fb, activity) {
 //   direct chance per generation that a fully touched base cell changes
 //          state outright: cosi's cold freezes liquid, čímsi's warmth melts ice
 //   cool   how fast the map fades per generation (0.004 ~ 10 s half-life)
+//   show   opacity of the touch-layer cells over the base layer (the glow is separate)
 export const TOUCH_RANGES = {
   birth_lo: [0, 8, 1], birth_hi: [0, 8, 1],
   surv_lo:  [0, 8, 1], surv_hi:  [0, 8, 1],
@@ -121,12 +122,12 @@ export const TOUCH_RANGES = {
   melt:   [0, 1, 0.01], melt_nb:   [0, 9, 1],
   noise: [0, 0.05, 0.001], rate: [1, 60, 0.5],
   need: [0, 1, 0.01], fade: [0, 0.05, 0.001], glow: [0, 0.05, 0.001], finger: [0, 1, 0.01],
-  span: [0, 1, 0.05], direct: [0, 0.2, 0.005], cool: [0, 0.05, 0.001],
+  span: [0, 1, 0.05], direct: [0, 0.2, 0.005], cool: [0, 0.05, 0.001], show: [0, 1, 0.05],
 };
 const TOUCH_INT = new Set(['birth_lo', 'birth_hi', 'surv_lo', 'surv_hi', 'freeze_nb', 'melt_nb']);
 export const TOUCH_DEFAULT = {
   birth_lo: 3, birth_hi: 4, surv_lo: 2, surv_hi: 3, freeze: 0.82, freeze_nb: 2, melt: 0.19, melt_nb: 6, noise: 0, rate: 16,
-  need: 0.15, fade: 0.003, glow: 0.0005, finger: 0.12, span: 0.5, direct: 0.03, cool: 0.004,
+  need: 0.15, fade: 0.003, glow: 0.0005, finger: 0.12, span: 0.5, direct: 0.03, cool: 0.004, show: 0.4,
 };
 export function clampTouch(k, v) { const [a, b] = TOUCH_RANGES[k] || [0, Infinity]; return clamp(v, a, b); }
 export function touchParamsFor(overrides = {}) {
@@ -184,8 +185,8 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   let grid = new Uint8Array(N);           // base layer
   let top = new Uint8Array(N);            // touch layer (cyan on cosi, amber on čímsi)
   let heat = new Float32Array(N), heat2 = new Float32Array(N);   // touch map, 0..1 = how strongly touched (temperature comes from the role)
-  // the other role's crowd: its own touch layer + map, in its colour, pushing the other way
-  let otop = new Uint8Array(N), oheat = new Float32Array(N), oheat2 = new Float32Array(N);
+  // the other role's crowd: only a touch map (glow in its colour), pushing the other way
+  let oheat = new Float32Array(N), oheat2 = new Float32Array(N);
   const bin = new Uint8Array(N);
   let table = [paramsFor(0.5)], params = table[0];
   let tparams = touchParamsFor();
@@ -242,9 +243,9 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   // ice of either layer (the base cell underneath counts too), melts from
   // liquid of either layer. It can only freeze once the map has cooled below
   // 2 x need, so a fresh stroke flows first and freezes as it fades.
-  function stepLayer(g, h, cmap) {
+  function stepLayer(g, h) {
     const T = tparams, b = grid;
-    let any = T.noise > 0 || (cmap && share > 0);
+    let any = T.noise > 0;
     if (!any) for (let i = 0; i < N; i++) if (g[i]) { any = true; break; }
     if (!any) return g;
     {
@@ -273,23 +274,12 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
       return next;
     }
   }
-  // crowd sparks: touch-layer cells appear where the rest of the audience touches
-  function sparks(g, h, cmap) {
-    if (cmap && share > 0) for (let c = 0; c < cmap.length; c++) {
-      if (cmap[c] > 0 && Math.random() < share * 0.01 * cmap[c]) {
-        const cx = Math.floor(((c % MAP_W) + Math.random()) * W / MAP_W), cy = Math.floor((Math.floor(c / MAP_W) + Math.random()) * H / MAP_H);
-        brush(cx, cy, 0.6, g);
-        warm(cx, cy, tparams.finger * 3 * share, h);
-      }
-    }
-  }
+  // the crowds only share their glow (touch map), not touch-layer cells:
+  // those come from this phone's own fingers
   function updateTop() {
-    top = stepLayer(top, heat, crowd);
-    otop = stepLayer(otop, oheat, ocrowd);
-    sparks(top, heat, crowd);
-    sparks(otop, oheat, ocrowd);
+    top = stepLayer(top, heat);
     let t = diffuse(heat, heat2, top, crowd); heat2 = heat; heat = t;
-    t = diffuse(oheat, oheat2, otop, ocrowd); oheat2 = oheat; oheat = t;
+    t = diffuse(oheat, oheat2, null, ocrowd); oheat2 = oheat; oheat = t;
   }
 
   // touch map: spread to neighbours, fade, and pick up from living
@@ -300,7 +290,7 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
       const i = y * W + x;
       const avg = (h[idx(x - 1, y)] + h[idx(x + 1, y)] + h[idx(x, y - 1)] + h[idx(x, y + 1)]) * 0.25;
       let v = (h[i] + (avg - h[i]) * 0.15) * keep;
-      if (layer[i] === LIQUID) v += T.glow;
+      if (layer && layer[i] === LIQUID) v += T.glow;
       if (cm) v += share * 0.035 * cm[Math.floor(y * MAP_H / H) * MAP_W + Math.floor(x * MAP_W / W)];
       o[i] = v > 1 ? 1 : v < 0.0005 ? 0 : v;
     }
@@ -309,10 +299,14 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
 
   function draw() {
     const d = img.data, tc = TOUCH_COLORS[role] || TOUCH_COLORS.cimsi, tcol = tc.cells;
-    const oc = TOUCH_COLORS[otherRole(role)], ocol = oc.cells;
+    const oc = TOUCH_COLORS[otherRole(role)], k = clamp(+tparams.show, 0, 1), k0 = 1 - k;
     for (let i = 0; i < N; i++) {
-      const t = top[i], u = otop[i], col = t ? tcol[t] : u ? ocol[u] : COLORS[grid[i]];   // own layer on top
-      d[i * 4] = col[0]; d[i * 4 + 1] = col[1]; d[i * 4 + 2] = col[2]; d[i * 4 + 3] = 255;
+      const base = COLORS[grid[i]], t = top[i];
+      if (t) {                                       // touch-layer cell, faded over the base by `show`
+        const c = tcol[t];
+        d[i * 4] = base[0] * k0 + c[0] * k; d[i * 4 + 1] = base[1] * k0 + c[1] * k; d[i * 4 + 2] = base[2] * k0 + c[2] * k;
+      } else { d[i * 4] = base[0]; d[i * 4 + 1] = base[1]; d[i * 4 + 2] = base[2]; }
+      d[i * 4 + 3] = 255;
     }
     ctx.putImageData(img, 0, 0);
     if (hctx) {
@@ -353,7 +347,7 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   function randomize(density = 0.3) {
     for (let i = 0; i < N; i++) grid[i] = Math.random() < density ? LIQUID : EMPTY;
   }
-  function clear() { grid.fill(EMPTY); top.fill(EMPTY); heat.fill(0); otop.fill(EMPTY); oheat.fill(0); }
+  function clear() { grid.fill(EMPTY); top.fill(EMPTY); heat.fill(0); oheat.fill(0); }
   // Organic ice blob covering roughly the area of a size x size square: a
   // circle whose radius wobbles with a few random harmonics, plus ragged
   // edges and a few stray crystals around it. New shape on every call.
@@ -384,14 +378,14 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   }
   function countIce() { let n = 0; for (let i = 0; i < N; i++) if (grid[i] === ICE) n++; return n; }
   // new random liquid, with or without the big starting seed; touch layer and touch map wiped
-  function fresh(withSeed = true) { randomize(0.3); top.fill(EMPTY); heat.fill(0); otop.fill(EMPTY); oheat.fill(0); if (withSeed) iceSeed(); }
+  function fresh(withSeed = true) { randomize(0.3); top.fill(EMPTY); heat.fill(0); oheat.fill(0); if (withSeed) iceSeed(); }
 
   function freezeAll() { for (let i = 0; i < N; i++) if (grid[i] === LIQUID) grid[i] = ICE; }
   function meltAll()   { for (let i = 0; i < N; i++) if (grid[i] === ICE) grid[i] = LIQUID; }
 
   // touch-layer blob around a cell (Life-like rules need a few cells to get going)
-  function brush(cx, cy, p = 0.55, g = top) {
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (Math.random() < p) g[idx(cx + dx, cy + dy)] = LIQUID;
+  function brush(cx, cy, p = 0.55) {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (Math.random() < p) top[idx(cx + dx, cy + dy)] = LIQUID;
   }
   function warm(x, y, f, h = heat) {
     for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
