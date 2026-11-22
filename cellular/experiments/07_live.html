@@ -53,8 +53,11 @@ let role = null, leave = null, lastCmdId = null, wakeLock = null;
 
 // grid sized to this phone's screen, rebuilt on rotation
 let sim = createSim(cv, { cell: 12 });
+const paramsNow = r => { const ramp = net.getState().roles[r || 'cosi']; return paramsFor(phaseAt(ramp, net.now()), ramp.over, r || 'cosi', net.now()); };
+// big starting seed, except where the ice is steered (čímsi grows its own small one)
+const wantsSeed = () => !role || paramsNow(role).ice_target < 0;
 let resizeTimer;
-addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { sim = createSim(cv, { cell: 12 }); }, 250); });
+addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { sim = createSim(cv, { cell: 12, seed: wantsSeed() }); }, 250); });
 
 net.on('status', s => { dot.classList.toggle('ok', s.ok); msg.textContent = s.ok || !role ? '' : s.text; });
 
@@ -74,6 +77,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function start(r, fromTap) {
   if (!ROLES.includes(r)) return;
   role = r;
+  sim.fresh(wantsSeed());
   lastCmdId = net.getState().cmd && net.getState().cmd.id;
   if (leave) leave();
   leave = net.join(role);
@@ -105,14 +109,14 @@ let last = performance.now(), phase = 0;
 // console helper for checking a phone during setup: liveDebug()
 window.liveDebug = () => {
   const ramp = net.getState().roles[role || 'cosi'], p = phaseAt(ramp, net.now());
-  return { role, phase: +p.toFixed(3), running: ramp.running !== false, params: paramsFor(p, ramp.over), mode: net.mode };
+  return { role, phase: +p.toFixed(3), running: ramp.running !== false, params: paramsNow(role), ice: +(sim.countIce() / (sim.W * sim.H)).toFixed(3), mode: net.mode };
 };
 function frame(t) {
   const dt = (t - last) / 1000; last = t;
   const ramp = net.getState().roles[role || 'cosi'];
   phase = phaseAt(ramp, net.now());
-  sim.setParams(paramsFor(phase, ramp.over));
-  if (role && ramp.running !== false) sim.tick(dt);
+  sim.setParams(paramsFor(phase, ramp.over, role || 'cosi', net.now()));
+  if (role) sim.tick(dt, ramp.running !== false);          // pause eases to a stop
   sim.draw();
   requestAnimationFrame(frame);
 }

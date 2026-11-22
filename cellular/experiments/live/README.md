@@ -21,6 +21,22 @@ One `progress` slider drives both roles (linked):
 | 0 | cold (frozen) | warm (liquid) |
 | 1 | warm (liquid) | cold (frozen) |
 
+Each role has its own profile (`PROFILES` in `sim.js`):
+
+- **cosi** thaws from the frozen preset into sparse liquid (birth 4–7). On the way, `melt_nb` swings
+  back and forth (`melt_swing`, 2 ↔ 5 at the warm end, every `swing_s` = 10 s on the shared clock),
+  so it balances on the edge of melting instead of just melting. In the admin readout, `*` marks
+  melt_nb while it is swung up.
+- **čímsi** stays liquid until 15% cold (`SEED_AT`). Then one small seed appears and freezes over the
+  screen. Coverage follows the phase (`ice_target`, starts tiny and picks up), not the clock, so any
+  glide length works and a phone that joins late catches up in a few seconds. Going warmer again
+  melts it back from the edges. While steered, noise never makes ice, and the **ice seed / freeze /
+  melt** buttons only nudge it: it drifts back to the target. Set `ice_target` to `off` (far left) to
+  turn steering off.
+
+**pause** doesn't stop time dead: the simulation eases to a stop over ~3 s (and back up over ~2 s on
+**run**).
+
 Untick **linked** to steer the two roles separately. **glide** sets how long phones take to
 reach a new value. Every phone follows the same clock, so a 10-minute glide stays in sync and
 latecomers join mid-glide.

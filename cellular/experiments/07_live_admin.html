@@ -202,7 +202,7 @@ for (const role of ROLES) {
   $('roles').append(el);
   const q = s => el.querySelector(s);
   const c = cards[role] = {
-    sim: createSim(q('canvas'), { cols: 36, rows: 64 }),
+    sim: createSim(q('canvas'), { cols: 36, rows: 64, seed: paramsFor(curPhase(role), cur(role).over, role).ice_target < 0 }),
     now: q('[data-now]'), eta: q('[data-eta]'), bar: q('[data-bar]'), tval: q('[data-tval]'), target: q('[data-target]'),
     params: {},
   };
@@ -258,9 +258,9 @@ function frame(t) {
   const dt = (t - last) / 1000; last = t;
   const now = net.now();
   for (const role of ROLES) {
-    const r = cur(role), c = cards[role], p = phaseAt(r, now), params = paramsFor(p, r.over);
+    const r = cur(role), c = cards[role], p = phaseAt(r, now), params = paramsFor(p, r.over, role, now);
     c.sim.setParams(params);
-    if (r.running !== false) c.sim.tick(dt);
+    c.sim.tick(dt, r.running !== false);
     c.sim.draw();
     c.now.textContent = p.toFixed(2);
     c.bar.style.width = (p * 100).toFixed(1) + '%';
@@ -269,7 +269,9 @@ function frame(t) {
     for (const k in c.params) {
       const { input, out } = c.params[k];
       if (!busy('p' + role + k)) input.value = params[k];
-      out.textContent = Number(params[k].toFixed(3));
+      out.textContent = k === 'ice_target' && params[k] < 0 ? 'off'
+        : k === 'melt_nb' && params.melt_on !== params.melt_nb ? params.melt_on + '*'   // * = swung up right now
+        : Number(params[k].toFixed(3));
     }
   }
   $('masterVal').textContent = curPhase('cosi').toFixed(2);
