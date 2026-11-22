@@ -283,7 +283,7 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
       const avg = (h[idx(x - 1, y)] + h[idx(x + 1, y)] + h[idx(x, y - 1)] + h[idx(x, y + 1)]) * 0.25;
       let v = (h[i] + (avg - h[i]) * 0.15) * keep;
       if (top[i] === LIQUID) v += T.glow;
-      if (crowd && share > 0) v += share * 0.012 * crowd[Math.floor(y * MAP_H / H) * MAP_W + Math.floor(x * MAP_W / W)];
+      if (crowd && share > 0) v += share * 0.035 * crowd[Math.floor(y * MAP_H / H) * MAP_W + Math.floor(x * MAP_W / W)];
       o[i] = v > 1 ? 1 : v < 0.0005 ? 0 : v;
     }
     heat = o; heat2 = h;

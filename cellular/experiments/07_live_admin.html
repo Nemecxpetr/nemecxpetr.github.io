@@ -335,7 +335,7 @@ function aggregate() {
   const now = net.now(), crowd = {}, drop = [];
   for (const role of ROLES) {
     const acc = crowdAcc[role], entries = touchData[role] || {}, liveIds = presence.ids ? presence.ids[role] : null;
-    for (let i = 0; i < acc.length; i++) acc[i] *= 0.85;
+    for (let i = 0; i < acc.length; i++) acc[i] *= 0.93;                 // ~10 s half-life
     let poll = 0, touching = 0, aliveIds = 0;
     for (const id in entries) {
       const e = entries[id];
