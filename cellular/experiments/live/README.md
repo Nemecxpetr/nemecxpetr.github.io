@@ -66,7 +66,8 @@ plus `activity` (the share of that role's phones touched in the last 8 s) to `li
 switches with strength sliders (`live/fb`), both off by default:
 
 - **shared crowd map**: every phone shows both crowds' glow, so screens react together. Only the
-  glow (touch map) is shared, never touch-layer cells: those come from the phone's own fingers.
+  glow (touch map) is shared, never touch-layer cells: the azure/amber cells grow only on the
+  phone's own finger map, so only the phone that made them ever sees them.
   Its own role's crowd glows in its own colour and touch direction. The other role's crowd glows in
   that role's colour and pushes the other way: amber always warms, cyan always cools, and where both
   crowds touch they tug against each other.

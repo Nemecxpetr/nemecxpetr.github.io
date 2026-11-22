@@ -185,6 +185,9 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   let grid = new Uint8Array(N);           // base layer
   let top = new Uint8Array(N);            // touch layer (cyan on cosi, amber on čímsi)
   let heat = new Float32Array(N), heat2 = new Float32Array(N);   // touch map, 0..1 = how strongly touched (temperature comes from the role)
+  // this phone's own fingers only (no crowd): the touch layer lives only here,
+  // so azure/amber cells are never seen on any other device
+  let fheat = new Float32Array(N), fheat2 = new Float32Array(N);
   // the other role's crowd: only a touch map (glow in its colour), pushing the other way
   let oheat = new Float32Array(N), oheat2 = new Float32Array(N);
   const bin = new Uint8Array(N);
@@ -275,10 +278,11 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     }
   }
   // the crowds only share their glow (touch map), not touch-layer cells:
-  // those come from this phone's own fingers
+  // those are born and live only on this phone's own finger map
   function updateTop() {
-    top = stepLayer(top, heat);
-    let t = diffuse(heat, heat2, top, crowd); heat2 = heat; heat = t;
+    top = stepLayer(top, fheat);
+    let t = diffuse(fheat, fheat2, top, null); fheat2 = fheat; fheat = t;
+    t = diffuse(heat, heat2, top, crowd); heat2 = heat; heat = t;
     t = diffuse(oheat, oheat2, null, ocrowd); oheat2 = oheat; oheat = t;
   }
 
@@ -347,7 +351,7 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   function randomize(density = 0.3) {
     for (let i = 0; i < N; i++) grid[i] = Math.random() < density ? LIQUID : EMPTY;
   }
-  function clear() { grid.fill(EMPTY); top.fill(EMPTY); heat.fill(0); oheat.fill(0); }
+  function clear() { grid.fill(EMPTY); top.fill(EMPTY); heat.fill(0); fheat.fill(0); oheat.fill(0); }
   // Organic ice blob covering roughly the area of a size x size square: a
   // circle whose radius wobbles with a few random harmonics, plus ragged
   // edges and a few stray crystals around it. New shape on every call.
@@ -378,7 +382,7 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   }
   function countIce() { let n = 0; for (let i = 0; i < N; i++) if (grid[i] === ICE) n++; return n; }
   // new random liquid, with or without the big starting seed; touch layer and touch map wiped
-  function fresh(withSeed = true) { randomize(0.3); top.fill(EMPTY); heat.fill(0); oheat.fill(0); if (withSeed) iceSeed(); }
+  function fresh(withSeed = true) { randomize(0.3); top.fill(EMPTY); heat.fill(0); fheat.fill(0); oheat.fill(0); if (withSeed) iceSeed(); }
 
   function freezeAll() { for (let i = 0; i < N; i++) if (grid[i] === LIQUID) grid[i] = ICE; }
   function meltAll()   { for (let i = 0; i < N; i++) if (grid[i] === ICE) grid[i] = LIQUID; }
@@ -397,7 +401,8 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   function touchCell(x, y) {
     if (x < 0 || x >= W || y < 0 || y >= H) return;
     brush(x, y);
-    warm(x, y, tparams.finger);
+    warm(x, y, tparams.finger);                  // glow + base layer (shared with the crowd)
+    warm(x, y, tparams.finger, fheat);           // own finger map: gates the touch layer
     touches[Math.floor(y * MAP_H / H) * MAP_W + Math.floor(x * MAP_W / W)]++;
     touchCount++;
   }
