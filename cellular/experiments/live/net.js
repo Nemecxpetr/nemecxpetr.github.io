@@ -209,10 +209,10 @@ async function connectFirebasePlayer(config) {
   async function pollOnce() {
     try {
       const [roles, cmd, fb, crowd, net] = await Promise.all([
-        rest('live/roles'), rest('live/cmd'), rest('live/fb'), role ? rest(`live/crowd/${role}`) : null, rest('live/net'),
+        rest('live/roles'), rest('live/cmd'), rest('live/fb'), role ? rest('live/crowd') : null, rest('live/net'),
       ]);
       const s = { ...state, roles, cmd, fb, net, crowd: { ...state.crowd } };
-      if (role) s.crowd[role] = crowd;
+      if (role && crowd) for (const r of ROLES) s.crowd[r] = crowd[r];        // both: the other role's glow shows too
       state = normalize(s); emit('state', state);
       status({ ok: true, text: 'online · light' });
       balance();

@@ -59,7 +59,7 @@
 <div id="msg"></div>
 
 <script type="module">
-import { createSim, paramsFor, paramsTable, touchParamsFor, nudgedPhase, decodeMap, phaseAt } from './live/sim.js';
+import { createSim, paramsFor, paramsTable, touchParamsFor, nudgedPhase, decodeMap, phaseAt, otherRole } from './live/sim.js';
 import { connect, ROLES, ROLE_LABEL } from './live/net.js';
 
 const cv = document.getElementById('cv');
@@ -153,7 +153,7 @@ setInterval(() => {
   if (t.n > 0 || now - lastSent > 10000) { net.sendTouch(t); lastSent = now; }
 }, 2000);
 
-let last = performance.now(), activity = 0, crowdKey = null, crowdMap = null;
+let last = performance.now(), activity = 0, crowdKey = null, crowdMap = null, oKey = null, oMap = null;
 // console helper for checking a phone during setup: liveDebug()
 window.liveDebug = () => {
   const st = net.getState(), ramp = st.roles[role || 'cosi'], p = phaseAt(ramp, net.now());
@@ -166,8 +166,9 @@ function frame(t) {
   const st = net.getState(), r = role || 'cosi', ramp = st.roles[r], now = net.now();
   // the admin resends every 5 s; older than 15 s means the admin page is gone,
   // so drop it instead of glowing a frozen map forever
-  const c0 = role && st.crowd ? st.crowd[role] : null;
-  const crowd = c0 && now - (+c0.t || 0) < 15000 ? c0 : null, fb = st.fb || {};
+  const fresh = c => (c && now - (+c.t || 0) < 15000 ? c : null);
+  const crowd = role && st.crowd ? fresh(st.crowd[role]) : null, fb = st.fb || {};
+  const ocrowd = role && st.crowd ? fresh(st.crowd[otherRole(role)]) : null;   // the other role's touches, in its colour
   // crowd activity eases in/out so the nudge doesn't jump between updates
   const goalA = (crowd && +crowd.a) || 0;
   activity += (goalA - activity) * (1 - Math.exp(-Math.min(dt, 0.1) / (goalA > activity ? 2 : 4)));
@@ -175,9 +176,10 @@ function frame(t) {
   const tp = touchParamsFor(ramp.tover);
   sim.setTouchParams(tp);
   sim.setParams(paramsTable(phase, ramp.over, r, now, tp.span));
-  const key = crowd && crowd.m;
+  const key = crowd && crowd.m, okey = ocrowd && ocrowd.m;
   if (key !== crowdKey) { crowdKey = key; crowdMap = key ? decodeMap(key) : null; }
-  sim.setCrowd(fb.share ? crowdMap : null, fb.share ? +fb.shareK || 0 : 0);
+  if (okey !== oKey) { oKey = okey; oMap = okey ? decodeMap(okey) : null; }
+  sim.setCrowd(fb.share ? crowdMap : null, fb.share ? +fb.shareK || 0 : 0, fb.share ? oMap : null);
   if (role) sim.tick(dt, ramp.running !== false);          // pause eases to a stop
   sim.draw();
   requestAnimationFrame(frame);

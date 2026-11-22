@@ -119,7 +119,7 @@
 <p class="muted" style="margin-top:16px">keys: space run/pause all · [ / ] progress −/+ 0.02 · h hold · touch a preview to test the touch layer</p>
 
 <script type="module">
-import { createSim, paramsFor, paramsTable, phaseAt, nudgedPhase, PARAM_RANGES, clampParam,
+import { createSim, paramsFor, paramsTable, tableCenter, otherRole, phaseAt, nudgedPhase, PARAM_RANGES, clampParam,
          TOUCH_RANGES, TOUCH_COLORS, clampTouch, touchParamsFor, MAP_W, MAP_H, encodeMap, decodeMap } from './live/sim.js';
 import { connect, ROLES, ROLE_LABEL, WS_CAP } from './live/net.js';
 
@@ -269,7 +269,7 @@ for (const role of ROLES) {
     sim: createSim(q('canvas.cells'), { cols: 36, rows: 64, role, heatCanvas: q('canvas.heat'), seed: paramsFor(curPhase(role), cur(role).over, role).ice_target < 0 }),
     now: q('[data-now]'), eta: q('[data-eta]'), bar: q('[data-bar]'), tval: q('[data-tval]'), target: q('[data-target]'), nudge: q('[data-nudge]'),
     map: q('[data-map]').getContext('2d'), aud: q('[data-aud]'),
-    activity: 0, crowdKey: null, crowdMap: null,
+    activity: 0, crowdKey: null, crowdMap: null, oKey: null, oMap: null,
   };
   c.mapImg = c.map.createImageData(MAP_W, MAP_H);
   // touch the preview to try the touch layer here (local only, not sent)
@@ -364,12 +364,9 @@ function aggregate() {
     tpmLog[role] = tpmLog[role].filter(([t]) => now - t < 60000);
     const a = players ? Math.min(1, touching / players) : 0;
     stats[role] = { live, poll, players, touching, a, tpm: tpmLog[role].reduce((s, [, n]) => s + n, 0) };
-    crowd[role] = { a: +a.toFixed(2) };
+    // each role's own crowd map; every phone shows both (own colour + the other's)
+    crowd[role] = { m: encodeMap(Array.from(acc, v => v * 35)), a: +a.toFixed(2) };
   }
-  // one heat map shared by both roles: everyone's touches together, each phone
-  // shows it in its own colour/direction (activity / nudge stay per role)
-  const shared = encodeMap(Array.from(crowdAcc.cosi, (v, i) => (v + crowdAcc.cimsi[i]) * 35));
-  for (const role of ROLES) crowd[role].m = shared;
   // write when it changed or as a heartbeat; only count a write once it
   // succeeded, so a rejected one (not signed in yet) is retried
   const json = JSON.stringify(crowd), ws = stats.cosi.live + stats.cimsi.live;
@@ -473,12 +470,13 @@ function frame(t) {
     const crowd = st.crowd && st.crowd[role], goalA = (crowd && +crowd.a) || 0;
     c.activity += (goalA - c.activity) * (1 - Math.exp(-Math.min(dt, 0.1) / (goalA > c.activity ? 2 : 4)));
     const p = nudgedPhase(p0, role, fb, c.activity);
-    const tp = touchParamsFor(r.tover), table = paramsTable(p, r.over, role, now, tp.span), params = table[0];
-    const key = crowd && crowd.m;
+    const tp = touchParamsFor(r.tover), table = paramsTable(p, r.over, role, now, tp.span), params = tableCenter(table);
+    const key = crowd && crowd.m, oc = st.crowd && st.crowd[otherRole(role)], okey = oc && oc.m;
     if (key !== c.crowdKey) { c.crowdKey = key; c.crowdMap = key ? decodeMap(key) : null; }
+    if (okey !== c.oKey) { c.oKey = okey; c.oMap = okey ? decodeMap(okey) : null; }
     c.sim.setTouchParams(tp);
     c.sim.setParams(table);
-    c.sim.setCrowd(fb.share ? c.crowdMap : null, fb.share ? +fb.shareK || 0 : 0);
+    c.sim.setCrowd(fb.share ? c.crowdMap : null, fb.share ? +fb.shareK || 0 : 0, fb.share ? c.oMap : null);
     c.sim.tick(dt, r.running !== false);
     c.sim.draw();
     c.now.textContent = p.toFixed(2);

@@ -64,9 +64,10 @@ players / touching / touches per minute and a small heat map. It writes a decayi
 plus `activity` (the share of that role's phones touched in the last 8 s) to `live/crowd`. Two
 switches with strength sliders (`live/fb`), both off by default:
 
-- **shared crowd map**: one crowd map from everyone's touches, cosi and čímsi together. Every phone
-  feels it as its own touch map plus sparks of its own touch colour, so screens react together.
-  The admin cards still show each role's own touches.
+- **shared crowd map**: every phone shows both crowds, so screens react together. Its own role's
+  crowd comes in its own colour and touch direction. The other role's crowd comes as a second touch
+  layer and glow in that role's colour, pushing the other way: amber always warms, cyan always
+  cools, and where both crowds touch they tug against each other.
 - **crowd nudge**: activity pushes the role's progress the touch way (cosi colder, čímsi warmer), up
   to 0.15 × strength, on top of the progress slider. It eases in and out over a few seconds.
 

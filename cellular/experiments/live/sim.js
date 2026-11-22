@@ -136,14 +136,18 @@ export function touchParamsFor(overrides = {}) {
   return p;
 }
 
-// Touch moves the base layer's phase the role's touch way (cosi colder, čímsi
-// warmer) by up to `span`: one param set per touch level, per frame.
+// Touch moves the base layer's phase by up to `span`: the role's own touch
+// map its touch way (cosi colder, čímsi warmer), the other role's crowd the
+// other way. One param set per net touch level, -L..L; the middle is untouched.
 export const HEAT_LEVELS = 9;
 export function paramsTable(phase, overrides, role, now, span) {
-  const t = [];
-  for (let b = 0; b < HEAT_LEVELS; b++) t.push(paramsFor(clamp(phase + touchDir(role) * span * b / (HEAT_LEVELS - 1), 0, 1), overrides, role, now));
+  const t = [], L = HEAT_LEVELS - 1;
+  for (let b = -L; b <= L; b++) t.push(paramsFor(clamp(phase + touchDir(role) * span * b / L, 0, 1), overrides, role, now));
   return t;
 }
+// the untouched param set of a table (or a single set)
+export const tableCenter = t => (Array.isArray(t) ? t[(t.length - 1) >> 1] : t);
+export const otherRole = role => (role === 'cimsi' ? 'cosi' : 'cimsi');
 
 // coarse touch map shared with the admin: 8 x 16 cells, one base-36 char each
 export const MAP_W = 8, MAP_H = 16;
@@ -180,10 +184,13 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   let grid = new Uint8Array(N);           // base layer
   let top = new Uint8Array(N);            // touch layer (cyan on cosi, amber on čímsi)
   let heat = new Float32Array(N), heat2 = new Float32Array(N);   // touch map, 0..1 = how strongly touched (temperature comes from the role)
+  // the other role's crowd: its own touch layer + map, in its colour, pushing the other way
+  let otop = new Uint8Array(N), oheat = new Float32Array(N), oheat2 = new Float32Array(N);
   const bin = new Uint8Array(N);
   let table = [paramsFor(0.5)], params = table[0];
   let tparams = touchParamsFor();
-  let crowd = null, share = 0;            // shared crowd map (8x16 floats 0..1) and its strength
+  let crowd = null, share = 0;            // own role's crowd map (8x16 floats 0..1) and its strength
+  let ocrowd = null;                      // the other role's crowd map (same strength)
   let acc = 0, tacc = 0, speed = null;
   const touches = new Float32Array(MAP_W * MAP_H);
   let touchCount = 0;
@@ -194,13 +201,14 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     // per-cell params: the touch map picks one of the paramsTable levels.
     // ice_target: steer freezing (below target) and melting (above it) so
     // coverage tracks the target; a small seed starts it when there's no ice.
-    const L = table.length - 1;
-    for (let i = 0; i < N; i++) bin[i] = Math.min(L, (heat[i] * L + 0.5) | 0);
+    const L = (table.length - 1) >> 1;
+    for (let i = 0; i < N; i++) bin[i] = L + clamp(Math.round((heat[i] - oheat[i]) * L), -L, L);
     if (params.ice_target > 0 && countIce() === 0) plantSeed();
     const frac = countIce() / N;
     const fz = table.map(p => p.ice_target >= 0 ? p.freeze * clamp((p.ice_target - frac) * 25, 0, 1) : p.freeze);
     const ml = table.map(p => p.ice_target >= 0 ? p.melt * clamp((frac - p.ice_target) * 25, 0, 1) : p.melt);
-    const g = grid, next = new Uint8Array(N), direct = tparams.direct, warmTouch = role === 'cimsi';
+    const g = grid, next = new Uint8Array(N), direct = tparams.direct;
+    const warmH = role === 'cimsi' ? heat : oheat, coldH = role === 'cimsi' ? oheat : heat;   // amber warms, cyan cools
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x, s = g[i], b = bin[i], P = table[b], steered = P.ice_target >= 0;
       let nLiquid = 0, nIce = 0;
@@ -218,8 +226,8 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
         else if (nIce >= P.freeze_nb && Math.random() < fz[b]) ns = ICE;
       } else if (steered ? (nIce < 8 || Math.random() < 0.01) && Math.random() < ml[b]   // steered: recede from the edges
                          : nLiquid >= P.melt_on && Math.random() < ml[b]) ns = LIQUID;
-      else if (warmTouch && direct && Math.random() < direct * heat[i]) ns = LIQUID;   // čímsi: warm touch melts ice
-      if (!warmTouch && ns === LIQUID && direct && Math.random() < direct * heat[i]) ns = ICE;   // cosi: cold touch freezes liquid
+      else if (direct && Math.random() < direct * warmH[i]) ns = LIQUID;               // warm (amber) touch melts ice
+      if (ns === LIQUID && direct && Math.random() < direct * coldH[i]) ns = ICE;      // cold (cyan) touch freezes liquid
       if (Math.random() < P.noise) {
         if (steered) { if (ns !== ICE) ns = LIQUID - ns; }       // steered ice: noise never makes ice, only the seed does
         else ns = (ns + 1 + Math.floor(Math.random() * 2)) % 3;  // one of the two other states
@@ -234,11 +242,12 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   // ice of either layer (the base cell underneath counts too), melts from
   // liquid of either layer. It can only freeze once the map has cooled below
   // 2 x need, so a fresh stroke flows first and freezes as it fades.
-  function updateTop() {
-    const T = tparams, g = top, b = grid, h = heat;
-    let any = T.noise > 0 || (crowd && share > 0);
+  function stepLayer(g, h, cmap) {
+    const T = tparams, b = grid;
+    let any = T.noise > 0 || (cmap && share > 0);
     if (!any) for (let i = 0; i < N; i++) if (g[i]) { any = true; break; }
-    if (any) {
+    if (!any) return g;
+    {
       const next = new Uint8Array(N);
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
         const i = y * W + x, s = g[i];
@@ -261,46 +270,59 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
         if (T.noise && Math.random() < T.noise) ns = ns === LIQUID ? EMPTY : LIQUID;
         next[i] = ns;
       }
-      top = next;
+      return next;
     }
-    // crowd sparks: touch-layer cells appear where the rest of the audience touches
-    if (crowd && share > 0) for (let c = 0; c < crowd.length; c++) {
-      if (crowd[c] > 0 && Math.random() < share * 0.01 * crowd[c]) {
+  }
+  // crowd sparks: touch-layer cells appear where the rest of the audience touches
+  function sparks(g, h, cmap) {
+    if (cmap && share > 0) for (let c = 0; c < cmap.length; c++) {
+      if (cmap[c] > 0 && Math.random() < share * 0.01 * cmap[c]) {
         const cx = Math.floor(((c % MAP_W) + Math.random()) * W / MAP_W), cy = Math.floor((Math.floor(c / MAP_W) + Math.random()) * H / MAP_H);
-        brush(cx, cy, 0.6);
-        warm(cx, cy, tparams.finger * 3 * share);
+        brush(cx, cy, 0.6, g);
+        warm(cx, cy, tparams.finger * 3 * share, h);
       }
     }
-    updateHeat();
+  }
+  function updateTop() {
+    top = stepLayer(top, heat, crowd);
+    otop = stepLayer(otop, oheat, ocrowd);
+    sparks(top, heat, crowd);
+    sparks(otop, oheat, ocrowd);
+    let t = diffuse(heat, heat2, top, crowd); heat2 = heat; heat = t;
+    t = diffuse(oheat, oheat2, otop, ocrowd); oheat2 = oheat; oheat = t;
   }
 
   // touch map: spread to neighbours, fade, and pick up from living
-  // touch-layer cells and from the shared crowd map
-  function updateHeat() {
-    const T = tparams, h = heat, o = heat2, keep = 1 - T.cool;
+  // touch-layer cells and from the crowd map; returns the new map (written into o)
+  function diffuse(h, o, layer, cmap) {
+    const T = tparams, keep = 1 - T.cool, cm = cmap && share > 0 ? cmap : null;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x;
       const avg = (h[idx(x - 1, y)] + h[idx(x + 1, y)] + h[idx(x, y - 1)] + h[idx(x, y + 1)]) * 0.25;
       let v = (h[i] + (avg - h[i]) * 0.15) * keep;
-      if (top[i] === LIQUID) v += T.glow;
-      if (crowd && share > 0) v += share * 0.035 * crowd[Math.floor(y * MAP_H / H) * MAP_W + Math.floor(x * MAP_W / W)];
+      if (layer[i] === LIQUID) v += T.glow;
+      if (cm) v += share * 0.035 * cm[Math.floor(y * MAP_H / H) * MAP_W + Math.floor(x * MAP_W / W)];
       o[i] = v > 1 ? 1 : v < 0.0005 ? 0 : v;
     }
-    heat = o; heat2 = h;
+    return o;
   }
 
   function draw() {
     const d = img.data, tc = TOUCH_COLORS[role] || TOUCH_COLORS.cimsi, tcol = tc.cells;
+    const oc = TOUCH_COLORS[otherRole(role)], ocol = oc.cells;
     for (let i = 0; i < N; i++) {
-      const t = top[i], col = t ? tcol[t] : COLORS[grid[i]];
+      const t = top[i], u = otop[i], col = t ? tcol[t] : u ? ocol[u] : COLORS[grid[i]];   // own layer on top
       d[i * 4] = col[0]; d[i * 4 + 1] = col[1]; d[i * 4 + 2] = col[2]; d[i * 4 + 3] = 255;
     }
     ctx.putImageData(img, 0, 0);
     if (hctx) {
-      const hd = himg.data, c = tc.glow;
+      // both glows on one canvas: colour mixed by weight, alpha added
+      const hd = himg.data, c = tc.glow, e = oc.glow;
       for (let i = 0; i < N; i++) {
-        hd[i * 4] = c[0]; hd[i * 4 + 1] = c[1]; hd[i * 4 + 2] = c[2];
-        hd[i * 4 + 3] = Math.min(255, Math.sqrt(heat[i]) * 150);
+        const a = Math.sqrt(heat[i]) * 150, b = Math.sqrt(oheat[i]) * 150, w = a + b;
+        if (w < 0.5) { hd[i * 4 + 3] = 0; continue; }
+        hd[i * 4] = (c[0] * a + e[0] * b) / w; hd[i * 4 + 1] = (c[1] * a + e[1] * b) / w; hd[i * 4 + 2] = (c[2] * a + e[2] * b) / w;
+        hd[i * 4 + 3] = Math.min(255, w);
       }
       hctx.putImageData(himg, 0, 0);
     }
@@ -331,7 +353,7 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   function randomize(density = 0.3) {
     for (let i = 0; i < N; i++) grid[i] = Math.random() < density ? LIQUID : EMPTY;
   }
-  function clear() { grid.fill(EMPTY); top.fill(EMPTY); heat.fill(0); }
+  function clear() { grid.fill(EMPTY); top.fill(EMPTY); heat.fill(0); otop.fill(EMPTY); oheat.fill(0); }
   // Organic ice blob covering roughly the area of a size x size square: a
   // circle whose radius wobbles with a few random harmonics, plus ragged
   // edges and a few stray crystals around it. New shape on every call.
@@ -362,19 +384,19 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   }
   function countIce() { let n = 0; for (let i = 0; i < N; i++) if (grid[i] === ICE) n++; return n; }
   // new random liquid, with or without the big starting seed; touch layer and touch map wiped
-  function fresh(withSeed = true) { randomize(0.3); top.fill(EMPTY); heat.fill(0); if (withSeed) iceSeed(); }
+  function fresh(withSeed = true) { randomize(0.3); top.fill(EMPTY); heat.fill(0); otop.fill(EMPTY); oheat.fill(0); if (withSeed) iceSeed(); }
 
   function freezeAll() { for (let i = 0; i < N; i++) if (grid[i] === LIQUID) grid[i] = ICE; }
   function meltAll()   { for (let i = 0; i < N; i++) if (grid[i] === ICE) grid[i] = LIQUID; }
 
   // touch-layer blob around a cell (Life-like rules need a few cells to get going)
-  function brush(cx, cy, p = 0.55) {
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (Math.random() < p) top[idx(cx + dx, cy + dy)] = LIQUID;
+  function brush(cx, cy, p = 0.55, g = top) {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (Math.random() < p) g[idx(cx + dx, cy + dy)] = LIQUID;
   }
-  function warm(x, y, f) {
+  function warm(x, y, f, h = heat) {
     for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
       const j = idx(x + dx, y + dy);
-      heat[j] = Math.min(1, heat[j] + f * Math.exp(-(dx * dx + dy * dy) / 4));
+      h[j] = Math.min(1, h[j] + f * Math.exp(-(dx * dx + dy * dy) / 4));
     }
   }
   // one touch sample at a grid cell: touch layer + touch map + count for the admin
@@ -410,9 +432,10 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     W, H, tick, draw, update, randomize, clear, iceSeed, freezeAll, meltAll, fresh, countIce,
     touchAt, touchCell, takeTouches,
     // a single param set, or a paramsTable (one set per touch level)
-    setParams(p) { table = Array.isArray(p) ? p : [p]; params = table[0]; },
+    setParams(p) { table = Array.isArray(p) ? p : [p]; params = tableCenter(table); },
     setTouchParams(p) { tparams = p; },
-    setCrowd(map, strength) { crowd = map; share = strength; },
+    // own role's crowd map, the other role's, and the strength for both
+    setCrowd(map, strength, other = null) { crowd = map; share = strength; ocrowd = other; },
     setRole(r) { role = r; },
     get params() { return params; },
     get touchParams() { return tparams; },
