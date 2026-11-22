@@ -12,35 +12,65 @@
     "country": "Czech Republic"
   },
   {
-      "date": "2026-11-23",
-      "dateEnd": "2026-11-24",
-      "title": "Giants N.2",
-      "event": "Setkávání nové hudby plus - JA-HA-MU", 
+      "date": "2026-11-24",
+      "dateEnd": null,
+      "title": "Melting Giants (Brno)",
+      "event": "Setkávání nové hudby plus - JA-HA-MU",
       "format": "music performance",
       "type": "performance, live music, composition",
-      "abstract" : "Composition for 5 acoustic instruments and live electronics, composed for JA-HA-MU.",
-      "artistRoles": ["composer", "sound-artist", "live-electronics"],
+      "abstract" : "Composition for six instruments (flute, classical guitar, violin, cello, bassoon, bass clarinet) with a live visual score on the players' and the audience's phones, composed for JA-HA-MU. Brno concert.",
+      "artistRoles": ["composer", "sound-artist"],
       "venue": "Komorní sál JAMU",
       "city": "Brno",
-      "country": "Czech Republic"
+      "country": "Czech Republic",
+      "links": {
+        "primary": {
+          "label": "About the piece",
+          "url": "articles/melting-giants/",
+          "platform": "website"
+        },
+        "secondary": []
+      }
   },
   {
-    "date": "2026-11-28",
-    "title": "",
-    "event": "SONDA - TRYCHTÝŘ (Divadlo na Orlí)",
-    "type": "installation",
-    "format": "sound installation",
-    "artistRoles": ["sound-artist", "installation-artist", "sound-designer", "ligtht-designer"],
-    "venue": "Divadlo na Orlí",
+      "date": "2026-11-23",
+      "dateEnd": null,
+      "title": "Melting Giants (Praha)",
+      "event": "Setkávání nové hudby plus - JA-HA-MU",
+      "format": "music performance",
+      "type": "performance, live music, composition",
+      "abstract" : "Composition for six instruments (flute, classical guitar, violin, cello, bassoon, bass clarinet) with a live visual score on the players' and the audience's phones, composed for JA-HA-MU. Prague concert.",
+      "artistRoles": ["composer", "sound-artist"],
+      "venue": "Atrium Žižkov",
+      "city": "Praha",
+      "country": "Czech Republic",
+      "links": {
+        "primary": {
+          "label": "About the piece",
+          "url": "articles/melting-giants/",
+          "platform": "website"
+        },
+        "secondary": []
+      }
+  },
+  {
+    "date": "2026-11-19",
+    "dateEnd": null,
+    "title": "Emotionally Overwhelmed Entities",
+    "event": "Emotionally Overwhelmed Entities",
+    "type": "performance",
+    "format": "performance / live set",
+    "artistRoles": ["composer", "sound-artist", "live-electronics", "improviser", "sound-designer", "conceptual-artist"],
+    "venue": "Rello",
     "city": "Brno",
     "country": "Czech Republic",
-    "collaborators": ["Sára Bočková"],
-    "abstract": "Sound installation for the SONDA festival as part of TRYCHTÝŘ.",
+    "collaborators": ["Eliška Čermáková"],
+    "abstract": "",
     "links": {
       "primary": {
-        "label": "Festival web",
-        "url": "https://sondafestival.com",
-        "platform": "website"
+        "label": "Event",
+        "url": "https://fb.me/e/55BO7mcaq",
+        "platform": "facebook"
       },
       "secondary": []
     }

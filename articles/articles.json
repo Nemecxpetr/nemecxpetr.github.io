@@ -1,5 +1,12 @@
 [
   {
+    "key": "melting-giants",
+    "title": "Melting Giants",
+    "url": "melting-giants/",
+    "content": "melting-giants/article.html",
+    "map": "melting-giants/map.json"
+  },
+  {
     "key": "czech-scene-sound",
     "title": "Postoj ke zvukovemu v ramci hudebni sceny CR",
     "url": "czech-scene-sound/",

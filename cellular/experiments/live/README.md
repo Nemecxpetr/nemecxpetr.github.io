@@ -10,7 +10,7 @@
   Made with `segno` (`segno.make(url, error='h')`).
 - Every phone starts with random liquid plus an organic ice seed (`iceSeed()` in `sim.js`, a new
   shape each time). The admin's **ice seed** button drops another one.
-- Article about the piece (Giants N.2): `articles/giants-n2/`.
+- Article about the piece (Melting Giants): `articles/melting-giants/`.
 
 ## Roles
 
