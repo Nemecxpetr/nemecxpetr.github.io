@@ -129,8 +129,8 @@ function connectLocal() {
     writeRole(role, ramp) { state.roles[role] = ramp; publish(); },
     sendCmd(type, role) { state.cmd = { id: randomId(), type, role, at: Date.now() }; publish(); },
     writeFb(fb) { state.fb = fb; publish(); },
-    writeCrowd(crowd) { state.crowd = crowd; publish(); },
-    writeNet() {},
+    writeCrowd(crowd) { state.crowd = crowd; publish(); return Promise.resolve(true); },
+    writeNet() { return Promise.resolve(true); },
     dropTouch(list) { for (const [r, id] of list) delete touch[r][id]; },
     writeLog(session, t, snap) { (logs[session] ||= {})[t] = snap; try { localStorage.setItem(LOGKEY, JSON.stringify(logs)); } catch {} },
     async readLog(session) { return logs[session] || null; },
@@ -344,8 +344,9 @@ async function connectFirebaseAdmin(config) {
     writeRole(role, ramp) { state.roles[role] = ramp; emit('state', state); set(ref(db, `live/roles/${role}`), ramp).catch(fail); },
     sendCmd(type, role) { set(ref(db, 'live/cmd'), { id: randomId(), type, role, at: Date.now() + offset }).catch(fail); },
     writeFb(fb) { state.fb = fb; emit('state', state); set(ref(db, 'live/fb'), fb).catch(fail); },
-    writeCrowd(crowd) { set(ref(db, 'live/crowd'), crowd).catch(fail); },
-    writeNet(n) { set(ref(db, 'live/net'), n).catch(fail); },
+    // resolve true/false so the aggregator can retry a rejected write
+    writeCrowd(crowd) { return set(ref(db, 'live/crowd'), crowd).then(() => true, e => { fail(e); return false; }); },
+    writeNet(n) { return set(ref(db, 'live/net'), n).then(() => true, e => { fail(e); return false; }); },
     // remove stale touch entries: list of [role, id]
     dropTouch(list) {
       if (!list.length) return;

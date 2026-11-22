@@ -158,12 +158,16 @@ let last = performance.now(), activity = 0, crowdKey = null, crowdMap = null;
 window.liveDebug = () => {
   const st = net.getState(), ramp = st.roles[role || 'cosi'], p = phaseAt(ramp, net.now());
   return { role, link: net.link(), phase: +p.toFixed(3), nudged: +nudgedPhase(p, role, st.fb, activity).toFixed(3), activity: +activity.toFixed(2),
-    running: ramp.running !== false, params: paramsNow(role), touch: sim.touchParams, ice: +(sim.countIce() / (sim.W * sim.H)).toFixed(3), mode: net.mode };
+    crowdAge: st.crowd && st.crowd[role || 'cosi'] ? Math.round((net.now() - st.crowd[role || 'cosi'].t) / 1000) + ' s' : 'none',
+    share: !!(st.fb && st.fb.share), running: ramp.running !== false, params: paramsNow(role), touch: sim.touchParams, ice: +(sim.countIce() / (sim.W * sim.H)).toFixed(3), mode: net.mode };
 };
 function frame(t) {
   const dt = (t - last) / 1000; last = t;
   const st = net.getState(), r = role || 'cosi', ramp = st.roles[r], now = net.now();
-  const crowd = role && st.crowd ? st.crowd[role] : null, fb = st.fb || {};
+  // the admin resends every 5 s; older than 15 s means the admin page is gone,
+  // so drop it instead of glowing a frozen map forever
+  const c0 = role && st.crowd ? st.crowd[role] : null;
+  const crowd = c0 && now - (+c0.t || 0) < 15000 ? c0 : null, fb = st.fb || {};
   // crowd activity eases in/out so the nudge doesn't jump between updates
   const goalA = (crowd && +crowd.a) || 0;
   activity += (goalA - activity) * (1 - Math.exp(-Math.min(dt, 0.1) / (goalA > activity ? 2 : 4)));

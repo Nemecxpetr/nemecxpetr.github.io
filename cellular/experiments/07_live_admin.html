@@ -62,6 +62,7 @@
   <div class="row">players: <b>cosi <span id="n_cosi">0</span></b> · <b>čímsi <span id="n_cimsi">0</span></b>
     <span class="muted" id="links_n"></span></div>
   <div class="row" id="authBox"></div>
+  <div class="row"><span id="aggStatus" class="muted">shared glow: starting…</span></div>
 </header>
 <div class="muted" id="links" style="margin-top:6px"></div>
 
@@ -134,8 +135,12 @@ $('links').innerHTML = `player page: <a href="${playerUrl}" target="_blank">${pl
   ` · direct: <a href="${playerUrl}#cosi" target="_blank">#cosi</a> <a href="${playerUrl}#cimsi" target="_blank">#cimsi</a>` +
   (net.mode === 'local' ? ' <span class="muted">(local mode: open players as tabs in this browser)</span>' : '');
 
+// the crowd map / activity only reach the phones while this page is open and
+// signed in as the admin; without that the aggregator below can't write
+let signedIn = net.mode !== 'firebase';
 if (net.mode === 'firebase') {
   net.on('auth', u => {
+    signedIn = !!u;
     const box = $('authBox'); box.innerHTML = '';
     if (!u) { const b = btn('sign in (admin)', () => net.signIn()); box.append(b); return; }
     const s = document.createElement('span');
@@ -329,13 +334,17 @@ net.on('presence', p => { presence = p; });
 const crowdAcc = { cosi: new Float32Array(MAP_W * MAP_H), cimsi: new Float32Array(MAP_W * MAP_H) };
 const seenT = new Map(), tpmLog = { cosi: [], cimsi: [] };
 const stats = { cosi: { live: 0, poll: 0, players: 0, touching: 0, a: 0, tpm: 0 }, cimsi: { live: 0, poll: 0, players: 0, touching: 0, a: 0, tpm: 0 } };
-let lastCrowd = '', lastWs = -1;
+let lastCrowd = '', lastWs = -1, lastAgg = 0, sentAt = 0, sending = false, sendErr = '';
+const RESEND_MS = 5000;           // heartbeat: phones treat a crowd map older than ~15 s as gone
 
 function aggregate() {
   const now = net.now(), crowd = {}, drop = [];
+  // decay by elapsed time, so a throttled background tab still fades correctly
+  const dt = lastAgg ? Math.min(60, (now - lastAgg) / 1000) : 1; lastAgg = now;
+  const k = Math.pow(0.93, dt);                                          // ~10 s half-life
   for (const role of ROLES) {
     const acc = crowdAcc[role], entries = touchData[role] || {}, liveIds = presence.ids ? presence.ids[role] : null;
-    for (let i = 0; i < acc.length; i++) acc[i] *= 0.93;                 // ~10 s half-life
+    for (let i = 0; i < acc.length; i++) acc[i] *= k;
     let poll = 0, touching = 0, aliveIds = 0;
     for (const id in entries) {
       const e = entries[id];
@@ -355,13 +364,29 @@ function aggregate() {
     tpmLog[role] = tpmLog[role].filter(([t]) => now - t < 60000);
     const a = players ? Math.min(1, touching / players) : 0;
     stats[role] = { live, poll, players, touching, a, tpm: tpmLog[role].reduce((s, [, n]) => s + n, 0) };
-    crowd[role] = { m: encodeMap(Array.from(acc, v => v * 35)), a: +a.toFixed(2) };
+    crowd[role] = { a: +a.toFixed(2) };
   }
-  const json = JSON.stringify(crowd);
-  if (json !== lastCrowd) { lastCrowd = json; for (const r of ROLES) crowd[r].t = Math.round(now); net.writeCrowd(crowd); }
-  const ws = stats.cosi.live + stats.cimsi.live;
-  if (ws !== lastWs) { lastWs = ws; net.writeNet({ ws }); }
-  net.dropTouch(drop);
+  // one heat map shared by both roles: everyone's touches together, each phone
+  // shows it in its own colour/direction (activity / nudge stay per role)
+  const shared = encodeMap(Array.from(crowdAcc.cosi, (v, i) => (v + crowdAcc.cimsi[i]) * 35));
+  for (const role of ROLES) crowd[role].m = shared;
+  // write when it changed or as a heartbeat; only count a write once it
+  // succeeded, so a rejected one (not signed in yet) is retried
+  const json = JSON.stringify(crowd), ws = stats.cosi.live + stats.cimsi.live;
+  if (signedIn && !sending && (json !== lastCrowd || ws !== lastWs || now - sentAt > RESEND_MS)) {
+    sending = true;
+    for (const r of ROLES) crowd[r].t = Math.round(now);
+    Promise.all([net.writeCrowd(crowd), ws !== lastWs ? net.writeNet({ ws }) : true]).then(([okC, okN]) => {
+      sending = false;
+      if (okC) { lastCrowd = json; sentAt = now; sendErr = ''; } else sendErr = 'write rejected';
+      if (okN) lastWs = ws;
+    });
+  }
+  if (signedIn) net.dropTouch(drop);
+  const agg = $('aggStatus'), age = (now - sentAt) / 1000;
+  if (!signedIn) { agg.textContent = '✗ shared glow / nudge off: not signed in — phones get nothing until you sign in'; agg.className = 'err'; }
+  else if (sendErr || age > 15) { agg.textContent = `✗ shared glow: ${sendErr || 'not sent'} (${sentAt ? Math.round(age) + ' s ago' : 'never'})`; agg.className = 'err'; }
+  else { agg.textContent = `✓ shared glow: sending to phones (${Math.round(age)} s ago) · keep this page open`; agg.className = 'muted'; }
 
   $('n_cosi').textContent = stats.cosi.players; $('n_cimsi').textContent = stats.cimsi.players;
   const poll = stats.cosi.poll + stats.cimsi.poll;
@@ -374,7 +399,12 @@ function aggregate() {
   }
   record(now);
 }
-setInterval(aggregate, 1000);
+// ticker in a worker: timers in a hidden tab get throttled to ~1/min, worker
+// timers don't, so the crowd map keeps flowing with the admin in the background
+try {
+  const w = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 1000)'], { type: 'text/javascript' })));
+  w.onmessage = aggregate;
+} catch { setInterval(aggregate, 1000); }
 
 function drawMap(c, acc, col) {
   const d = c.mapImg.data;

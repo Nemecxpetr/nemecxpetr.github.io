@@ -64,10 +64,17 @@ players / touching / touches per minute and a small heat map. It writes a decayi
 plus `activity` (the share of that role's phones touched in the last 8 s) to `live/crowd`. Two
 switches with strength sliders (`live/fb`), both off by default:
 
-- **shared crowd map**: every phone feels its role's crowd map (touch map plus sparks of its touch
-  colour), so screens react together.
+- **shared crowd map**: one crowd map from everyone's touches, cosi and čímsi together. Every phone
+  feels it as its own touch map plus sparks of its own touch colour, so screens react together.
+  The admin cards still show each role's own touches.
 - **crowd nudge**: activity pushes the role's progress the touch way (cosi colder, čímsi warmer), up
   to 0.15 × strength, on top of the progress slider. It eases in and out over a few seconds.
+
+Both only work while the admin page is **open and signed in**: it is the one doing the adding
+up. It resends the crowd map every 5 s (a worker timer keeps this going when the tab is in the
+background), and the header shows `✓ shared glow: sending…` or the reason it isn't. Phones
+ignore a crowd map older than 15 s, so closing the admin fades the shared glow out instead of
+freezing it.
 
 **● record** saves a snapshot every 10 s to `/log/<session>` (admin-only: progress, players,
 activity, touches/min, crowd maps). **download log** exports it as JSON.
