@@ -205,6 +205,10 @@ export function touchParamsFor(overrides = {}) {
 // map its touch way (cosi colder, čímsi warmer), the other role's crowd the
 // other way. One param set per net touch level, -L..L; the middle is untouched.
 export const HEAT_LEVELS = 9;
+// touch-map glow: how much of the screen-wide average glow is taken off
+// (exposure adaptation, 0 = none), and how much of the overlap of the two
+// crowds still shows where they cancel out (0 = none, 1 = plain sum)
+const GLOW_ADAPT = 0.6, GLOW_OVERLAP = 0.3;
 export function paramsTable(phase, overrides, role, now, span) {
   const t = [], L = HEAT_LEVELS - 1;
   for (let b = -L; b <= L; b++) t.push(paramsFor(clamp(phase + touchDir(role) * span * b / L, 0, 1), overrides, role, now));
@@ -630,13 +634,23 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     }
     if (pctx) drawPrismCanvas();
     if (hctx) {
-      // both glows on one canvas: colour mixed by weight, alpha added
+      // both glows on one canvas, showing the net tug (like the physics, which
+      // uses heat - oheat): the stronger crowd's colour, as bright as it wins
+      // by; where the two cancel only a dim trace of the overlap is left, so
+      // they don't add up to a grey-white haze. Exposure adapts: the more of
+      // the screen glows, the more the average is taken off, so a crowd that
+      // warms everything still shows where it's hottest instead of a flat wash.
       const hd = himg.data, c = tc.glow, e = oc.glow;
+      let sa = 0, sb = 0;
+      for (let i = 0; i < N; i++) { sa += Math.sqrt(heat[i]); sb += Math.sqrt(oheat[i]); }
+      const ma = GLOW_ADAPT * sa / N, mb = GLOW_ADAPT * sb / N;
       for (let i = 0; i < N; i++) {
-        const a = Math.sqrt(heat[i]) * 150, b = Math.sqrt(oheat[i]) * 150, w = a + b;
-        if (w < 0.5) { hd[i * 4 + 3] = 0; continue; }
-        hd[i * 4] = (c[0] * a + e[0] * b) / w; hd[i * 4 + 1] = (c[1] * a + e[1] * b) / w; hd[i * 4 + 2] = (c[2] * a + e[2] * b) / w;
-        hd[i * 4 + 3] = Math.min(255, w);
+        const a = Math.max(0, Math.sqrt(heat[i]) - ma), b = Math.max(0, Math.sqrt(oheat[i]) - mb);
+        const s = (Math.abs(a - b) + GLOW_OVERLAP * Math.min(a, b)) * 150;
+        if (s < 0.5) { hd[i * 4 + 3] = 0; continue; }
+        const wa = a * a * a, wb = b * b * b, w = wa + wb;   // cubed: the colour leans hard to the winner
+        hd[i * 4] = (c[0] * wa + e[0] * wb) / w; hd[i * 4 + 1] = (c[1] * wa + e[1] * wb) / w; hd[i * 4 + 2] = (c[2] * wa + e[2] * wb) / w;
+        hd[i * 4 + 3] = Math.min(255, s);
       }
       hctx.putImageData(himg, 0, 0);
     }
