@@ -208,7 +208,7 @@ export const HEAT_LEVELS = 9;
 // touch-map glow: how much of the screen-wide average glow is taken off
 // (exposure adaptation, 0 = none), and how much of the overlap of the two
 // crowds still shows where they cancel out (0 = none, 1 = plain sum)
-const GLOW_ADAPT = 0.6, GLOW_OVERLAP = 0.3;
+const GLOW_ADAPT = 0.6, GLOW_OVERLAP = 0.5;
 export function paramsTable(phase, overrides, role, now, span) {
   const t = [], L = HEAT_LEVELS - 1;
   for (let b = -L; b <= L; b++) t.push(paramsFor(clamp(phase + touchDir(role) * span * b / L, 0, 1), overrides, role, now));
@@ -640,12 +640,14 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
       // they don't add up to a grey-white haze. Exposure adapts: the more of
       // the screen glows, the more the average is taken off, so a crowd that
       // warms everything still shows where it's hottest instead of a flat wash.
+      // What's left is stretched back to the full range, so the hot spots
+      // still shine at full strength: only the wash goes dark, not the peaks.
       const hd = himg.data, c = tc.glow, e = oc.glow;
       let sa = 0, sb = 0;
       for (let i = 0; i < N; i++) { sa += Math.sqrt(heat[i]); sb += Math.sqrt(oheat[i]); }
-      const ma = GLOW_ADAPT * sa / N, mb = GLOW_ADAPT * sb / N;
+      const ma = GLOW_ADAPT * sa / N, mb = GLOW_ADAPT * sb / N, ka = 1 / (1 - ma), kb = 1 / (1 - mb);
       for (let i = 0; i < N; i++) {
-        const a = Math.max(0, Math.sqrt(heat[i]) - ma), b = Math.max(0, Math.sqrt(oheat[i]) - mb);
+        const a = Math.max(0, Math.sqrt(heat[i]) - ma) * ka, b = Math.max(0, Math.sqrt(oheat[i]) - mb) * kb;
         const s = (Math.abs(a - b) + GLOW_OVERLAP * Math.min(a, b)) * 150;
         if (s < 0.5) { hd[i * 4 + 3] = 0; continue; }
         const wa = a * a * a, wb = b * b * b, w = wa + wb;   // cubed: the colour leans hard to the winner
