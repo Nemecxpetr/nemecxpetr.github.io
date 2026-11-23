@@ -111,12 +111,15 @@ const PROFILES = {
   },
 };
 
-// IDLE (between performances): the water melts away and dies out over a few
-// seconds and nothing new is born, so the screen is left mostly blank for
-// drawing. Touch layer + glow + crowd maps keep working as usual. The pages
-// also switch the sim to its smooth look (setSmooth) while idle.
-export const IDLE_PARAMS = { ...BASE, birth_lo: 8, birth_hi: 0, surv_lo: 8, surv_hi: 0, freeze: 0, freeze_nb: 8,
-  melt: 0.06, melt_nb: 0, melt_on: 0, noise: 0, rate: 8 };
+// IDLE (between performances): the ice melts back from its edges until it
+// covers about IDLE_ICE of the screen, and the water settles: nothing new is
+// born, crowded or lonely liquid dies, and what's left sits in small still
+// clumps (Life-like survival on 2-3). So some ice and water stay, calm, with
+// room to draw around them. Touch layer + glow + crowd maps keep working as
+// usual. The pages also switch the sim to its smooth look (setSmooth) while idle.
+export const IDLE_ICE = 0.15;
+export const IDLE_PARAMS = { ...BASE, birth_lo: 8, birth_hi: 0, surv_lo: 2, surv_hi: 3, freeze: 0, freeze_nb: 8,
+  melt: 0.05, melt_nb: 0, melt_on: 0, noise: 0, rate: 8, ice_target: IDLE_ICE };
 
 export function clampParam(name, v) {
   const [min, max] = PARAM_RANGES[name] || [0, Infinity];
@@ -621,11 +624,11 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     }
     const sk = mix(ROUND, 1, smoothstep01(smooth));
     if (sk > 0) drawSmooth(sk);
-    if (pctx) drawPrismCanvas();
     else {
       if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; canvas.style.imageRendering = 'pixelated'; }
       ctx.putImageData(img, 0, 0);
     }
+    if (pctx) drawPrismCanvas();
     if (hctx) {
       // both glows on one canvas: colour mixed by weight, alpha added
       const hd = himg.data, c = tc.glow, e = oc.glow;
