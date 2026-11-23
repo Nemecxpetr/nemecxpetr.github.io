@@ -58,11 +58,11 @@ const SPEC_SUM = [0, 1, 2].map(c => SPECTRUM.reduce((a, s) => a + s[c], 0));
 // It swells and fades over a second or two (goes out early only if both
 // cells are gone). More of them the smoother the look.
 export const PRISM_RATE = 15;               // new prisms per second on a whole screen (x the look's strength), if there are edges
-export const PRISM = 0.65;                 // opacity at its brightest
+export const PRISM = 0.95;                 // opacity at its brightest
 export const PRISM_S = [1, 2.5];           // lifetime, seconds (random in range)
 const PRISM_MAX = 100;
-export const PRISM_BLUR = 0.5;            // blur of the prism layer, in cells
-export const PRISM_GLOW = [2.6, 0.45];     // halo behind each prism: size (x the prism) and opacity
+export const PRISM_BLUR = 0.15;            // blur of the prism layer, in cells
+export const PRISM_GLOW = [0.6, 0.53];     // halo behind each prism: size (x the prism) and opacity
 export const PRISM_TWINKLE = 0.25;         // how much a lit prism flickers (0 = steady)
 const edgeList = [];                       // scratch: liquid-ice edges this generation
 const rainbow = u => {                     // 0 violet .. 1 red, full saturation
