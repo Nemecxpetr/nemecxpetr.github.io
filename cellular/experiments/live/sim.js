@@ -43,7 +43,7 @@ export const SMOOTH_PX = 60000;
 // then added back, so the glow around the shapes fans out into a rainbow and
 // fades deep into the dark. The spread breathes slowly (shimmer). Strength
 // follows the look: some in standard, full in IDLE.
-export const GLOW = 1.5;                     // overall glow (x the look's strength)
+export const GLOW = 0.93;                     // overall glow (x the look's strength)
 export const GLOW_GAIN = 0.5;              // brightness of the blurred light before the tone lift
 export const GLOW_R = 0.8;                 // blur radius (sigma, in cells)
 export const DISPERSION = 0.3;               // violet-to-red shift, in cells
@@ -57,10 +57,13 @@ const SPEC_SUM = [0, 1, 2].map(c => SPECTRUM.reduce((a, s) => a + s[c], 0));
 // side to red on the ice side (soft in that direction, hard along the edge).
 // It swells and fades over a second or two (goes out early only if both
 // cells are gone). More of them the smoother the look.
-export const PRISM_RATE = 22;               // new prisms per second on a whole screen (x the look's strength), if there are edges
-export const PRISM = 0.85;                 // opacity at its brightest
+export const PRISM_RATE = 15;               // new prisms per second on a whole screen (x the look's strength), if there are edges
+export const PRISM = 0.65;                 // opacity at its brightest
 export const PRISM_S = [1, 2.5];           // lifetime, seconds (random in range)
 const PRISM_MAX = 100;
+export const PRISM_BLUR = 0.5;            // blur of the prism layer, in cells
+export const PRISM_GLOW = [2.6, 0.45];     // halo behind each prism: size (x the prism) and opacity
+export const PRISM_TWINKLE = 0.25;         // how much a lit prism flickers (0 = steady)
 const edgeList = [];                       // scratch: liquid-ice edges this generation
 const rainbow = u => {                     // 0 violet .. 1 red, full saturation
   const h = 0.8 * (1 - clamp(u, 0, 1));
@@ -248,6 +251,8 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     PW = prismCanvas.width = Math.max(W, Math.round((r.width || W * cell) * dpr));
     PH = prismCanvas.height = Math.max(H, Math.round((r.height || H * cell) * dpr));
     pctx = prismCanvas.getContext('2d');
+    // soft: the whole layer blurred (CSS, so it works on every browser), scaled to the cell size
+    prismCanvas.style.filter = `blur(${(PRISM_BLUR * (r.width ? r.width / W : cell)).toFixed(2)}px)`;
   }
   let grid = new Uint8Array(N);           // base layer
   let top = new Uint8Array(N);            // touch layer (cyan on cosi, amber on čímsi)
@@ -522,19 +527,27 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     pctx.clearRect(0, 0, PW, PH);
     prismsShown = prisms.length > 0;
     const cw = PW / W, ch = PH / H;
-    for (const pr of prisms) {
-      const env = PRISM * Math.sin(Math.PI * (clock - pr.t0) / pr.dur) ** 2;
-      if (env <= 0.002) continue;
-      const x = pr.x * cw, y = pr.y * ch;
-      const g = pr.horiz ? pctx.createLinearGradient(pr.flip ? x + cw : x, 0, pr.flip ? x : x + cw, 0)
-                         : pctx.createLinearGradient(0, pr.flip ? y + ch : y, 0, pr.flip ? y : y + ch);
+    // one rainbow rectangle centred on the prism, f times its size
+    const paint = (pr, f, alpha) => {
+      const w = cw * f, h = ch * f, x = (pr.x + 0.5) * cw - w / 2, y = (pr.y + 0.5) * ch - h / 2;
+      const g = pr.horiz ? pctx.createLinearGradient(pr.flip ? x + w : x, 0, pr.flip ? x : x + w, 0)
+                         : pctx.createLinearGradient(0, pr.flip ? y + h : y, 0, pr.flip ? y : y + h);
       for (const u of PRISM_STOPS) {
         const c = rainbow(u), a = u === 0 || u === 1 ? 0 : 1;   // violet at the liquid end
         g.addColorStop(u, `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`);
       }
-      pctx.globalAlpha = env;
+      pctx.globalAlpha = Math.min(1, alpha);
       pctx.fillStyle = g;
-      pctx.fillRect(x, y, cw, ch);
+      pctx.fillRect(x, y, w, h);
+    };
+    for (const pr of prisms) {
+      const age = clock - pr.t0, twinkle = 1 - PRISM_TWINKLE * (0.5 + 0.5 * Math.sin(age * 9 + pr.key));
+      const env = PRISM * Math.sin(Math.PI * age / pr.dur) ** 2 * twinkle;
+      if (env <= 0.002) continue;
+      pctx.globalCompositeOperation = 'lighter';           // halos add up where they overlap: shine
+      paint(pr, PRISM_GLOW[0], env * PRISM_GLOW[1]);
+      pctx.globalCompositeOperation = 'source-over';
+      paint(pr, 1, env);
     }
     pctx.globalAlpha = 1;
   }

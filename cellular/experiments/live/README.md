@@ -101,7 +101,9 @@ edges fan out into rainbow fringes; the direction slowly turns. Some in standard
 now and then splits: a small rainbow lights up on their shared edge, one cell big, half over each,
 the full spectrum running across it in straight bands (violet on the liquid side, red on the ice
 side). It swells and fades over a second or two. Rare in
-standard, more in IDLE (`PRISM_RATE`, `PRISM`, `PRISM_S`). The audience just draws: their own touch layer and glow work as usual, and the
+standard, more in IDLE (`PRISM_RATE`, `PRISM`, `PRISM_S`). They're drawn on their own canvas
+at full screen resolution, blurred, with a larger halo behind each and a slight twinkle
+(`PRISM_BLUR`, `PRISM_GLOW`, `PRISM_TWINKLE`). The audience just draws: their own touch layer and glow work as usual, and the
 shared glow of both crowds is always on in IDLE (at the shared-map strength, 0.5 if unset).
 Progress, pause and crowd nudge don't apply. Phones joining during IDLE start blank and show a
 short "kresli · draw" hint. Switching IDLE off starts every screen fresh at the current progress.
