@@ -37,6 +37,7 @@
     .pv { position: relative; height: 220px; aspect-ratio: 36 / 64; border: 1px solid var(--faint); flex: none; overflow: hidden; touch-action: none; }
     .pv canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
     .pv canvas.cells { image-rendering: pixelated; }
+    .pv canvas.prism { pointer-events: none; }
     .pv canvas.heat { pointer-events: none; image-rendering: auto; filter: blur(5px); mix-blend-mode: screen; }
     .readout { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
     .bar { height: 6px; background: #111; border-radius: 3px; overflow: hidden; }
@@ -253,7 +254,7 @@ for (const role of ROLES) {
   el.innerHTML = `
     <div class="row" style="justify-content:space-between"><h2>${ROLE_LABEL[role]}</h2><span class="muted">${dir[role]}</span></div>
     <div class="preview">
-      <div class="pv"><canvas class="cells"></canvas><canvas class="heat"></canvas></div>
+      <div class="pv"><canvas class="cells"></canvas><canvas class="prism"></canvas><canvas class="heat"></canvas></div>
       <div class="readout">
         <div>now <span class="big" data-now>0.00</span> <span class="muted" data-eta></span></div>
         <div class="bar"><i data-bar></i></div>
@@ -271,7 +272,7 @@ for (const role of ROLES) {
   const q = s => el.querySelector(s);
   const pv = q('.pv');
   const c = cards[role] = {
-    sim: createSim(q('canvas.cells'), { cols: 36, rows: 64, role, heatCanvas: q('canvas.heat'), seed: paramsFor(curPhase(role), cur(role).over, role).ice_target < 0 }),
+    sim: createSim(q('canvas.cells'), { cols: 36, rows: 64, role, heatCanvas: q('canvas.heat'), prismCanvas: q('canvas.prism'), seed: paramsFor(curPhase(role), cur(role).over, role).ice_target < 0 }),
     now: q('[data-now]'), eta: q('[data-eta]'), bar: q('[data-bar]'), tval: q('[data-tval]'), target: q('[data-target]'), nudge: q('[data-nudge]'),
     map: q('[data-map]').getContext('2d'), aud: q('[data-aud]'),
     activity: 0, crowdKey: null, crowdMap: null, oKey: null, oMap: null,
@@ -483,6 +484,7 @@ function frame(t) {
     if (idle !== c.wasIdle) { if (c.wasIdle && !idle) c.sim.fresh(params.ice_target < 0); c.wasIdle = idle; }
     c.sim.setTouchParams(tp);
     c.sim.setParams(idle ? IDLE_PARAMS : table);
+    c.sim.setSmooth(idle ? 1 : 0);
     c.sim.setCrowd(share ? c.crowdMap : null, shareK, share ? c.oMap : null);
     c.sim.tick(dt, idle || r.running !== false);
     c.sim.draw();

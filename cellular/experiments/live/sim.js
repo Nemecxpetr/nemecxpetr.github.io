@@ -1,3 +1,4 @@
+
 // Phase CA from 03_phase.html, packaged so the player page and the admin
 // previews run the exact same rules. States: 0 empty, 1 liquid, 2 ice.
 // On top runs a second CA, the touch layer, and under both a touch map. Each
@@ -29,6 +30,42 @@ const FROZEN = { ...BASE, birth_lo: 4, birth_hi: 5, surv_lo: 2, surv_hi: 3, free
 const LIQUID_PRESET = { ...BASE, birth_lo: 3, birth_hi: 5, surv_lo: 2, surv_hi: 4, freeze: 0.02, freeze_nb: 7, melt: 0.4, melt_nb: 2, noise: 0.001, rate: 22 };
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const smoothstep01 = t => t * t * (3 - 2 * t);
+export const SMOOTH_S = 3;                 // seconds for the IDLE look to fade in / out
+// rounding of the standard (non-idle) look: 0 = square pixels, 1 = the full
+// round IDLE look. A little, so the cells read as soft-cornered tiles.
+export const ROUND = 0.4;
+// pixel budget for the smooth drawing: each cell is drawn as S x S pixels,
+// S as large as fits (2..8), then the browser scales it up smoothly
+export const SMOOTH_PX = 60000;
+// Dispersion glow: the light of the lit cells is split into a few colours of
+// the spectrum and each is blurred by its own amount (violet least, red most),
+// then added back, so the glow around the shapes fans out into a rainbow and
+// fades deep into the dark. The spread breathes slowly (shimmer). Strength
+// follows the look: some in standard, full in IDLE.
+export const GLOW = 1.5;                     // overall glow (x the look's strength)
+export const GLOW_GAIN = 0.5;              // brightness of the blurred light before the tone lift
+export const GLOW_R = 0.8;                 // blur radius (sigma, in cells)
+export const DISPERSION = 0.3;               // violet-to-red shift, in cells
+export const GLOW_SAT = 1.2;               // colour saturation of the glow (1 = as split)
+const SPECTRUM = [[0.55, 0, 1], [0, 0.35, 1], [0, 0.9, 0.85], [0.25, 1, 0.1], [1, 0.8, 0], [1, 0.12, 0]];
+const SPEC_SUM = [0, 1, 2].map(c => SPECTRUM.reduce((a, s) => a + s[c], 0));
+// Prisms: where a liquid cell and an ice cell sit side by side, light crossing
+// from water into ice can split now and then: a small rainbow lights up on
+// their shared edge. It is one cell big, half over each of the two cells, and
+// the full spectrum runs across it in straight bands, violet on the liquid
+// side to red on the ice side (soft in that direction, hard along the edge).
+// It swells and fades over a second or two (goes out early only if both
+// cells are gone). More of them the smoother the look.
+export const PRISM_RATE = 22;               // new prisms per second on a whole screen (x the look's strength), if there are edges
+export const PRISM = 0.85;                 // opacity at its brightest
+export const PRISM_S = [1, 2.5];           // lifetime, seconds (random in range)
+const PRISM_MAX = 100;
+const edgeList = [];                       // scratch: liquid-ice edges this generation
+const rainbow = u => {                     // 0 violet .. 1 red, full saturation
+  const h = 0.8 * (1 - clamp(u, 0, 1));
+  return [0, 2 / 3, 1 / 3].map(o => 255 * clamp(Math.abs(((h + o) % 1) * 6 - 3) - 1, 0, 1));
+};
 const mix = (a, b, t) => a + (b - a) * t;
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const blend = (A, B, t) => { const p = {}; for (const k in A) p[k] = mix(A[k], B[k], t); return p; };
@@ -73,7 +110,8 @@ const PROFILES = {
 
 // IDLE (between performances): the water melts away and dies out over a few
 // seconds and nothing new is born, so the screen is left mostly blank for
-// drawing. Touch layer + glow + crowd maps keep working as usual.
+// drawing. Touch layer + glow + crowd maps keep working as usual. The pages
+// also switch the sim to its smooth look (setSmooth) while idle.
 export const IDLE_PARAMS = { ...BASE, birth_lo: 8, birth_hi: 0, surv_lo: 8, surv_hi: 0, freeze: 0, freeze_nb: 8,
   melt: 0.06, melt_nb: 0, melt_on: 0, noise: 0, rate: 8 };
 
@@ -186,7 +224,7 @@ export const TOUCH_COLORS = {
   cimsi: { cells: [[0, 0, 0], [255, 140, 20], [255, 214, 140]], glow: [255, 90, 10] },  // warm: amber, frozen gold
 };
 
-export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = 'cosi', heatCanvas = null } = {}) {
+export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = 'cosi', heatCanvas = null, prismCanvas = null } = {}) {
   const W = cols || Math.max(8, Math.floor(innerWidth / cell));
   const H = rows || Math.max(8, Math.floor(innerHeight / cell));
   const N = W * H;
@@ -202,6 +240,15 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     heatCanvas.style.imageRendering = 'auto';
     hctx = heatCanvas.getContext('2d'); himg = hctx.createImageData(W, H);
   }
+  // prisms go on their own transparent canvas at full screen resolution, so
+  // their rainbow stays crisp however coarse the cell drawing is
+  let pctx = null, PW = 0, PH = 0, prismsShown = false;
+  if (prismCanvas) {
+    const r = prismCanvas.getBoundingClientRect(), dpr = (typeof devicePixelRatio === 'number' && devicePixelRatio) || 1;
+    PW = prismCanvas.width = Math.max(W, Math.round((r.width || W * cell) * dpr));
+    PH = prismCanvas.height = Math.max(H, Math.round((r.height || H * cell) * dpr));
+    pctx = prismCanvas.getContext('2d');
+  }
   let grid = new Uint8Array(N);           // base layer
   let top = new Uint8Array(N);            // touch layer (cyan on cosi, amber on čímsi)
   let heat = new Float32Array(N), heat2 = new Float32Array(N);   // touch map, 0..1 = how strongly touched (temperature comes from the role)
@@ -216,12 +263,36 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   let crowd = null, share = 0;            // own role's crowd map (8x16 floats 0..1) and its strength
   let ocrowd = null;                      // the other role's crowd map (same strength)
   let acc = 0, tacc = 0, speed = null;
+  // smooth look: 0 = standard (pixels with slightly rounded corners, ROUND),
+  // 1 = organic (IDLE). The cells are drawn S x finer and interpolated
+  // between cell centres: lit cells fade softly into the dark (and neighbours
+  // of the same colour melt together), while the border between two colours
+  // (liquid blue, ice white, touch layer) stays hard. The more smooth, the
+  // softer and rounder.
+  // `smooth` eases towards `smoothGoal` over SMOOTH_S seconds.
+  let smooth = 0, smoothGoal = 0;
+  const S = clamp(Math.floor(Math.sqrt(SMOOTH_PX / N)), 2, 8), SW = W * S, SH = H * S;
+  let simg = null, wKey = -1;
+  const wx0 = new Int32Array(SW), wx1 = new Int32Array(SW), wxf = new Float32Array(SW);
+  const wy0 = new Int32Array(SH), wy1 = new Int32Array(SH), wyf = new Float32Array(SH);
+  const cat = new Uint8Array(N);          // kind of cell (base state x touch-layer state), 0 = dark
+  const cxf = new Float32Array(SW), cyf = new Float32Array(SH);   // linear weights (for the glow)
+  const gSrc = new Float32Array(N), gTmp = new Float32Array(N);
+  const bR = new Float32Array(N), bG = new Float32Array(N), bB = new Float32Array(N);
+  const hR = new Float32Array(N), hG = new Float32Array(N), hB = new Float32Array(N);
+  let clock = 0, glowAt = -1;              // clock when the glow was last computed (-1 = stale)
+  // lit prisms: {i, j (liquid cell, ice cell), x, y (top-left corner, in cells), horiz, flip, t0, dur}
+  const prisms = [], prismAt = new Set();   // prismAt: edge keys (cell * 2 + 0 right / 1 down)
+  // redraw only when something on screen changed (cells, touch map, the look,
+  // prism cells); a repeated frame costs nothing. lastDraw = clock at the last one.
+  let dirty = true, lastDraw = -1, heatLive = false;
   const touches = new Float32Array(MAP_W * MAP_H);
   let touchCount = 0;
 
   const idx = (x, y) => ((y + H) % H) * W + (x + W) % W;
 
   function update() {
+    glowAt = -1; dirty = true;
     // per-cell params: the touch map picks one of the paramsTable levels.
     // ice_target: steer freezing (below target) and melting (above it) so
     // coverage tracks the target; a small seed starts it when there's no ice.
@@ -300,10 +371,13 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   // the crowds only share their glow (touch map), not touch-layer cells:
   // those are born and live only on this phone's own finger map
   function updateTop() {
+    const before = top, hadHeat = heatLive;
     top = stepLayer(top, fheat);
+    heatLive = false;                              // diffuse sets it if any map is still warm
     let t = diffuse(fheat, fheat2, top, null); fheat2 = fheat; fheat = t;
     t = diffuse(heat, heat2, top, crowd); heat2 = heat; heat = t;
     t = diffuse(oheat, oheat2, null, ocrowd); oheat2 = oheat; oheat = t;
+    if (top !== before || heatLive || hadHeat) { glowAt = -1; dirty = true; }   // idle and cold: nothing to redraw
   }
 
   // touch map: spread to neighbours, fade, and pick up from living
@@ -317,11 +391,211 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
       if (layer && layer[i] === LIQUID) v += T.glow;
       if (cm) v += share * 0.035 * cm[Math.floor(y * MAP_H / H) * MAP_W + Math.floor(x * MAP_W / W)];
       o[i] = v > 1 ? 1 : v < 0.0005 ? 0 : v;
+      if (o[i]) heatLive = true;
     }
     return o;
   }
 
+  // interpolation weights for one axis at strength k: the blend between
+  // neighbouring cells goes from a hard step (k 0, plain pixels) to a smooth
+  // S-curve (k 1), so the squares round off gradually
+  function axisWeights(n, o0, o1, of, k, linear = false) {
+    const steep = 1 / Math.max(k, 0.001);
+    for (let p = 0; p < n * S; p++) {
+      const u = (p + 0.5) / S - 0.5, c = Math.floor(u);
+      let t = clamp((u - c - 0.5) * steep + 0.5, 0, 1);
+      o0[p] = clamp(c, 0, n - 1); o1[p] = clamp(c + 1, 0, n - 1); of[p] = linear ? t : t * t * (3 - 2 * t);
+    }
+  }
+  // dispersion glow at cell resolution (hR/hG/hB, 0..255): each spectral
+  // colour takes its share of the lit cells' light and is blurred with its
+  // own radius, then the colours are added back together
+  function blur1(src, dst, sigma) {
+    const r = Math.min(Math.ceil(sigma * 2.5), Math.max(W, H) >> 1), ker = [];
+    let sum = 0;
+    for (let j = -r; j <= r; j++) { const v = Math.exp(-j * j / (2 * sigma * sigma)); ker.push(v); sum += v; }
+    for (let j = 0; j < ker.length; j++) ker[j] /= sum;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      let v = 0;
+      for (let j = -r; j <= r; j++) v += src[y * W + (x + j + W) % W] * ker[j + r];
+      gTmp[y * W + x] = v;
+    }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      let v = 0;
+      for (let j = -r; j <= r; j++) v += gTmp[((y + j + H) % H) * W + x] * ker[j + r];
+      dst[y * W + x] = v;
+    }
+  }
+  // the lit cells' light, blurred deep (blur is linear, so blur the colour
+  // once), then split like in a prism: each spectral colour takes its share
+  // of the blurred light, shifted along one direction by its own amount
+  // (violet least, red most) and the shares are added back. Where they
+  // overlap it adds up to the light's own colour, at the edges it fans out
+  // into a rainbow fringe. The direction turns slowly (shimmer). Faint tails
+  // are lifted (tone) so the glow reaches deep into the dark.
+  function disperse(d) {
+    for (let c = 0; c < 3; c++) {
+      for (let i = 0; i < N; i++) gSrc[i] = cat[i] ? d[i * 4 + c] : 0;
+      blur1(gSrc, c === 0 ? bR : c === 1 ? bG : bB, GLOW_R);
+    }
+    hR.fill(0); hG.fill(0); hB.fill(0);
+    const K = SPECTRUM.length, ang = clock * 0.12, ux = Math.cos(ang), uy = Math.sin(ang);
+    for (let s = 0; s < K; s++) {
+      const sp = SPECTRUM[s], n = sp[0] + sp[1] + sp[2];
+      const fr = sp[0] / SPEC_SUM[0], fg = sp[1] / SPEC_SUM[1], fb = sp[2] / SPEC_SUM[2];
+      const off = DISPERSION * (s / (K - 1) - 0.5), ox = ux * off, oy = uy * off;
+      const ix = Math.floor(ox), iy = Math.floor(oy), tx = ox - ix, ty = oy - iy;
+      for (let y = 0; y < H; y++) {
+        const y0 = ((y - iy) % H + H) % H, y1 = (y0 - 1 + H) % H;   // sample at (x - ox, y - oy)
+        for (let x = 0; x < W; x++) {
+          const x0 = ((x - ix) % W + W) % W, x1 = (x0 - 1 + W) % W;
+          const p00 = y0 * W + x0, p01 = y0 * W + x1, p10 = y1 * W + x0, p11 = y1 * W + x1;
+          const w00 = (1 - tx) * (1 - ty), w01 = tx * (1 - ty), w10 = (1 - tx) * ty, w11 = tx * ty;
+          const r = bR[p00] * w00 + bR[p01] * w01 + bR[p10] * w10 + bR[p11] * w11;
+          const g = bG[p00] * w00 + bG[p01] * w01 + bG[p10] * w10 + bG[p11] * w11;
+          const b = bB[p00] * w00 + bB[p01] * w01 + bB[p10] * w10 + bB[p11] * w11;
+          const v = (r * sp[0] + g * sp[1] + b * sp[2]) / n, i = y * W + x;
+          hR[i] += v * fr; hG[i] += v * fg; hB[i] += v * fb;
+        }
+      }
+    }
+    // lift the brightness (not the colour: a per-channel lift would wash it
+    // towards white) and push the colours apart (saturation)
+    for (let i = 0; i < N; i++) {
+      const r = hR[i] * GLOW_GAIN, g = hG[i] * GLOW_GAIN, b = hB[i] * GLOW_GAIN, m = (r + g + b) / 3, L = Math.max(r, g, b);
+      if (L <= 0.01) { hR[i] = hG[i] = hB[i] = 0; continue; }
+      const f = 255 * Math.pow(Math.min(L, 255) / 255, 0.55) / L;
+      hR[i] = Math.max(0, m + (r - m) * GLOW_SAT) * f; hG[i] = Math.max(0, m + (g - m) * GLOW_SAT) * f; hB[i] = Math.max(0, m + (b - m) * GLOW_SAT) * f;
+    }
+  }
+
+  function drawSmooth(k) {
+    if (canvas.width !== SW || canvas.height !== SH) {
+      canvas.width = SW; canvas.height = SH; canvas.style.imageRendering = 'auto';
+      simg = ctx.createImageData(SW, SH);
+    }
+    if (wKey < 0) { axisWeights(W, wx0, wx1, cxf, 1, true); axisWeights(H, wy0, wy1, cyf, 1, true); }
+    if (k !== wKey) { axisWeights(W, wx0, wx1, wxf, k); axisWeights(H, wy0, wy1, wyf, k); wKey = k; }
+    const d = img.data, o = simg.data;
+    for (let i = 0; i < N; i++) cat[i] = grid[i] || top[i] ? 1 + grid[i] * 3 + top[i] : 0;   // 0 = dark
+    const glow = GLOW * k;
+    // the glow only changes when the cells do (or slowly with the clock)
+    if (glow > 0 && (glowAt < 0 || clock - glowAt > 0.25)) { disperse(d); glowAt = clock; }
+    let q = 0;
+    for (let py = 0; py < SH; py++) {
+      const r0 = wy0[py] * W, r1 = wy1[py] * W, fy = wyf[py], gy = 1 - fy;
+      for (let px = 0; px < SW; px++, q += 4) {
+        const x0 = wx0[px], x1 = wx1[px], fx = wxf[px], gx = 1 - fx;
+        const a = r0 + x0, b = r0 + x1, c = r1 + x0, e = r1 + x1;
+        const A = cat[a], B = cat[b], C = cat[c], D = cat[e];
+        const wa = A ? gx * gy : 0, wb = B ? fx * gy : 0, wc = C ? gx * fy : 0, we = D ? fx * fy : 0;
+        const w = wa + wb + wc + we;                    // how lit this spot is: fades softly into the dark
+        let gr = 0, gg = 0, gb = 0;                     // dispersion glow here
+        if (glow > 0) {
+          const cx = cxf[px], cy = cyf[py], hx = 1 - cx, hy = 1 - cy;
+          const m = glow * (1 - smoothstep01(w > 1 ? 1 : w));   // only around the shapes, not on top
+          gr += (hx * hy * hR[a] + cx * hy * hR[b] + hx * cy * hR[c] + cx * cy * hR[e]) * m;
+          gg += (hx * hy * hG[a] + cx * hy * hG[b] + hx * cy * hG[c] + cx * cy * hG[e]) * m;
+          gb += (hx * hy * hB[a] + cx * hy * hB[b] + hx * cy * hB[c] + cx * cy * hB[e]) * m;
+        }
+        if (w <= 0.004) { o[q] = gr; o[q + 1] = gg; o[q + 2] = gb; o[q + 3] = 255; continue; }
+        // colour: whichever kind of cell (blue, white, touch...) covers the spot
+        // most, so the borders between colours stay hard
+        let best = a, bw = -1;
+        if (A) { const s = wa + (B === A ? wb : 0) + (C === A ? wc : 0) + (D === A ? we : 0); if (s > bw) { bw = s; best = a; } }
+        if (B) { const s = wb + (C === B ? wc : 0) + (D === B ? we : 0); if (s > bw) { bw = s; best = b; } }
+        if (C) { const s = wc + (D === C ? we : 0); if (s > bw) { bw = s; best = c; } }
+        if (D && we > bw) best = e;
+        const t = smoothstep01(w > 1 ? 1 : w);
+        o[q] = d[best * 4] * t + gr; o[q + 1] = d[best * 4 + 1] * t + gg; o[q + 2] = d[best * 4 + 2] * t + gb;
+        o[q + 3] = 255;
+      }
+    }
+    if (prisms.length && !pctx) drawPrisms(o);      // no prism canvas: into the cells (coarse)
+    ctx.putImageData(simg, 0, 0);
+  }
+  // prism canvas: each prism a cell-sized rectangle over its edge, filled with
+  // a rainbow gradient across the edge (soft at the two ends, hard sides)
+  const PRISM_STOPS = [0, 0.18, 0.34, 0.5, 0.66, 0.82, 1];
+  function drawPrismCanvas() {
+    if (!prisms.length && !prismsShown) return;
+    pctx.clearRect(0, 0, PW, PH);
+    prismsShown = prisms.length > 0;
+    const cw = PW / W, ch = PH / H;
+    for (const pr of prisms) {
+      const env = PRISM * Math.sin(Math.PI * (clock - pr.t0) / pr.dur) ** 2;
+      if (env <= 0.002) continue;
+      const x = pr.x * cw, y = pr.y * ch;
+      const g = pr.horiz ? pctx.createLinearGradient(pr.flip ? x + cw : x, 0, pr.flip ? x : x + cw, 0)
+                         : pctx.createLinearGradient(0, pr.flip ? y + ch : y, 0, pr.flip ? y : y + ch);
+      for (const u of PRISM_STOPS) {
+        const c = rainbow(u), a = u === 0 || u === 1 ? 0 : 1;   // violet at the liquid end
+        g.addColorStop(u, `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`);
+      }
+      pctx.globalAlpha = env;
+      pctx.fillStyle = g;
+      pctx.fillRect(x, y, cw, ch);
+    }
+    pctx.globalAlpha = 1;
+  }
+  // each prism: a cell-sized square over the edge, a rainbow running across it
+  // (fallback without a prism canvas: drawn into the cells, only as fine as S)
+  function drawPrisms(o) {
+    for (const pr of prisms) {
+      const env = PRISM * Math.sin(Math.PI * (clock - pr.t0) / pr.dur) ** 2;
+      if (env <= 0.002) continue;
+      const X0 = Math.round(pr.x * S), Y0 = Math.round(pr.y * S);
+      for (let py = Y0; py < Y0 + S; py++) for (let px = X0; px < X0 + S; px++) {
+        let u = ((pr.horiz ? px - X0 : py - Y0) + 0.5) / S;      // 0..1 across the edge
+        if (pr.flip) u = 1 - u;                                   // violet on the liquid side
+        const a = env * smoothstep01(clamp(Math.min(u, 1 - u) / 0.18, 0, 1)), c = rainbow(u), q = (py * SW + px) * 4;
+        o[q] += (c[0] - o[q]) * a; o[q + 1] += (c[1] - o[q + 1]) * a; o[q + 2] += (c[2] - o[q + 2]) * a;
+      }
+    }
+  }
+
+  // liquid / ice / nothing, counting the touch layer too (its ice wins)
+  const phaseOf = i => (grid[i] === ICE || top[i] === ICE ? ICE : grid[i] || top[i] ? LIQUID : EMPTY);
+  // one generation of the prism rule (runs with the base layer): find the
+  // liquid-ice pairs of side-by-side cells and light up a few of them, about
+  // PRISM_RATE per second however many edges there are
+  function prismStep(look) {
+    let want = PRISM_RATE * look / Math.max(1, params.rate);   // expected new prisms this generation
+    if (want <= 0 || prisms.length >= PRISM_MAX) return;
+    let n = Math.floor(want) + (Math.random() < want % 1 ? 1 : 0);
+    if (!n) return;
+    edgeList.length = 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x, si = phaseOf(i);
+      if (!si) continue;
+      if (x < W - 1) { const sj = phaseOf(i + 1); if (sj && sj !== si && !prismAt.has(i * 2)) edgeList.push(i * 2); }
+      if (y < H - 1) { const sj = phaseOf(i + W); if (sj && sj !== si && !prismAt.has(i * 2 + 1)) edgeList.push(i * 2 + 1); }
+    }
+    while (n-- > 0 && edgeList.length && prisms.length < PRISM_MAX) {
+      const pick = Math.floor(Math.random() * edgeList.length), key = edgeList[pick];
+      edgeList[pick] = edgeList[edgeList.length - 1]; edgeList.pop();
+      const i = key >> 1, dir = key & 1, j = dir === 0 ? i + 1 : i + W, x = i % W, y = (i - x) / W;
+      const liq = phaseOf(i) === LIQUID ? i : j, ice = liq === i ? j : i;
+      prisms.push({ i: liq, j: ice, key, horiz: dir === 0, flip: liq !== i,
+        x: dir === 0 ? x + 0.5 : x, y: dir === 0 ? y : y + 0.5,
+        t0: clock, dur: mix(PRISM_S[0], PRISM_S[1], Math.random()) });
+      prismAt.add(key);
+    }
+  }
+  // put out the prisms that are done, or whose two cells have both gone
+  // (liquid flickers every generation, so one changing doesn't count)
+  function prismAge() {
+    if (!prisms.length) return;
+    for (let n = prisms.length - 1; n >= 0; n--) {
+      const pr = prisms[n];
+      if (clock - pr.t0 >= pr.dur || (!phaseOf(pr.i) && !phaseOf(pr.j))) { prismAt.delete(pr.key); prisms.splice(n, 1); }
+    }
+    dirty = dirty || clock - lastDraw >= 0.05;     // fading prisms: up to 20 redraws a second
+  }
+
   function draw() {
+    if (!dirty) return;
+    dirty = false; lastDraw = clock;
     const d = img.data, tc = TOUCH_COLORS[role] || TOUCH_COLORS.cimsi, tcol = tc.cells;
     const oc = TOUCH_COLORS[otherRole(role)], k = clamp(+tparams.show, 0, 1), k0 = 1 - k;
     for (let i = 0; i < N; i++) {
@@ -332,7 +606,13 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
       } else { d[i * 4] = base[0]; d[i * 4 + 1] = base[1]; d[i * 4 + 2] = base[2]; }
       d[i * 4 + 3] = 255;
     }
-    ctx.putImageData(img, 0, 0);
+    const sk = mix(ROUND, 1, smoothstep01(smooth));
+    if (sk > 0) drawSmooth(sk);
+    if (pctx) drawPrismCanvas();
+    else {
+      if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; canvas.style.imageRendering = 'pixelated'; }
+      ctx.putImageData(img, 0, 0);
+    }
     if (hctx) {
       // both glows on one canvas: colour mixed by weight, alpha added
       const hd = himg.data, c = tc.glow, e = oc.glow;
@@ -352,6 +632,10 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   // so a phone that joins while paused starts still.
   function tick(dt, running = true) {
     dt = Math.min(dt, 0.1);
+    clock += dt;
+    prismAge();
+    if (smooth !== smoothGoal) dirty = true;
+    if (smooth !== smoothGoal) smooth = smoothGoal > smooth ? Math.min(smoothGoal, smooth + dt / SMOOTH_S) : Math.max(smoothGoal, smooth - dt / SMOOTH_S);
     const goal = running ? 1 : 0;
     if (speed == null) speed = goal;
     else {
@@ -361,7 +645,7 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     acc += dt * params.rate * speed;
     tacc += dt * tparams.rate * speed;
     let n = 0;
-    while (acc >= 1 && n++ < 8) { update(); acc -= 1; }
+    while (acc >= 1 && n++ < 8) { update(); prismStep(mix(ROUND, 1, smoothstep01(smooth))); acc -= 1; }
     if (acc >= 1) acc = 0;                           // slow device: drop frames, don't spiral
     n = 0;
     while (tacc >= 1 && n++ < 8) { updateTop(); tacc -= 1; }
@@ -369,13 +653,15 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   }
 
   function randomize(density = 0.3) {
+    dirty = true;
     for (let i = 0; i < N; i++) grid[i] = Math.random() < density ? LIQUID : EMPTY;
   }
-  function clear() { grid.fill(EMPTY); top.fill(EMPTY); heat.fill(0); fheat.fill(0); oheat.fill(0); }
+  function clear() { dirty = true; prisms.length = 0; prismAt.clear(); if (pctx) pctx.clearRect(0, 0, PW, PH); grid.fill(EMPTY); top.fill(EMPTY); heat.fill(0); fheat.fill(0); oheat.fill(0); }
   // Organic ice blob covering roughly the area of a size x size square: a
   // circle whose radius wobbles with a few random harmonics, plus ragged
   // edges and a few stray crystals around it. New shape on every call.
   function iceSeed(size = Math.max(4, Math.round(Math.min(W, H) / 4)), at = null) {
+    dirty = true;
     const waves = [];
     for (let k = 2; k <= 6; k++) waves.push({ k, a: (Math.random() * 0.22) / Math.sqrt(k - 1), ph: Math.random() * Math.PI * 2 });
     const wobble = th => { let f = 1; for (const w of waves) f += w.a * Math.sin(w.k * th + w.ph); return Math.max(0.35, f); };
@@ -402,16 +688,18 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
   }
   function countIce() { let n = 0; for (let i = 0; i < N; i++) if (grid[i] === ICE) n++; return n; }
   // new random liquid, with or without the big starting seed; touch layer and touch map wiped
-  function fresh(withSeed = true) { randomize(0.3); top.fill(EMPTY); heat.fill(0); fheat.fill(0); oheat.fill(0); if (withSeed) iceSeed(); }
+  function fresh(withSeed = true) { dirty = true; randomize(0.3); top.fill(EMPTY); heat.fill(0); fheat.fill(0); oheat.fill(0); if (withSeed) iceSeed(); }
 
-  function freezeAll() { for (let i = 0; i < N; i++) if (grid[i] === LIQUID) grid[i] = ICE; }
-  function meltAll()   { for (let i = 0; i < N; i++) if (grid[i] === ICE) grid[i] = LIQUID; }
+  function freezeAll() { dirty = true; for (let i = 0; i < N; i++) if (grid[i] === LIQUID) grid[i] = ICE; }
+  function meltAll()   { dirty = true; for (let i = 0; i < N; i++) if (grid[i] === ICE) grid[i] = LIQUID; }
 
   // touch-layer blob around a cell (Life-like rules need a few cells to get going)
   function brush(cx, cy, p = 0.55) {
+    dirty = true;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (Math.random() < p) top[idx(cx + dx, cy + dy)] = LIQUID;
   }
   function warm(x, y, f, h = heat) {
+    dirty = true; heatLive = true;
     for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
       const j = idx(x + dx, y + dy);
       h[j] = Math.min(1, h[j] + f * Math.exp(-(dx * dx + dy * dy) / 4));
@@ -452,11 +740,16 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
     touchAt, touchCell, takeTouches,
     // a single param set, or a paramsTable (one set per touch level)
     setParams(p) { table = Array.isArray(p) ? p : [p]; params = tableCenter(table); },
-    setTouchParams(p) { tparams = p; },
+    setTouchParams(p) { if (p.show !== tparams.show) dirty = true; tparams = p; },
+    // smooth look on (1) / off (0); eases over SMOOTH_S unless `snap`
+    setSmooth(v, snap = false) { smoothGoal = clamp(+v || 0, 0, 1); if (snap && smooth !== smoothGoal) { smooth = smoothGoal; dirty = true; } },
     // own role's crowd map, the other role's, and the strength for both
     setCrowd(map, strength, other = null) { crowd = map; share = strength; ocrowd = other; },
-    setRole(r) { role = r; },
+    setRole(r) { role = r; dirty = true; },
+    // after changing cells from outside (sim.grid / sim.top), so the next draw shows it
+    invalidate() { dirty = true; },
     get params() { return params; },
+    get prismCount() { return prisms.length; },
     get touchParams() { return tparams; },
     get grid() { return grid; },
     get top() { return top; },

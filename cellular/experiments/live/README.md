@@ -89,7 +89,19 @@ activity, touches/min, crowd maps). **download log** exports it as JSON.
 
 The **IDLE** switch in the audience panel (`live/fb.idle`) is for before and after the piece. On
 every phone the water melts away and dies out within about 5 s, nothing new grows, and the screen
-stays mostly blank. The audience just draws: their own touch layer and glow work as usual, and the
+stays mostly blank. Over ~3 s the cells also fade from the standard look (square tiles, slightly soft,
+`ROUND` in `sim.js`) into a smooth, organic one: the grid is interpolated between cell centres, so
+lit cells blur softly into the dark and into each other, while the border between two colours
+(liquid blue, ice white, touch layer) stays hard. Switching IDLE off fades back.
+Around the shapes a dispersion glow reaches deep into the dark: their light is blurred and split
+like in a prism, each spectral colour shifted by its own amount (violet least, red most), so the
+edges fan out into rainbow fringes; the direction slowly turns. Some in standard, full in IDLE
+(`GLOW`, `GLOW_R`, `DISPERSION`, `GLOW_SAT` in `sim.js`).
+**Prisms**: where a liquid and an ice cell sit side by side, light crossing from water into ice
+now and then splits: a small rainbow lights up on their shared edge, one cell big, half over each,
+the full spectrum running across it in straight bands (violet on the liquid side, red on the ice
+side). It swells and fades over a second or two. Rare in
+standard, more in IDLE (`PRISM_RATE`, `PRISM`, `PRISM_S`). The audience just draws: their own touch layer and glow work as usual, and the
 shared glow of both crowds is always on in IDLE (at the shared-map strength, 0.5 if unset).
 Progress, pause and crowd nudge don't apply. Phones joining during IDLE start blank and show a
 short "kresli · draw" hint. Switching IDLE off starts every screen fresh at the current progress.
