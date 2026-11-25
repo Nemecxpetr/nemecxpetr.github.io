@@ -174,8 +174,9 @@ function frame(t) {
   const fresh = c => (c && now - (+c.t || 0) < 15000 ? c : null);
   const crowd = role && st.crowd ? fresh(st.crowd[role]) : null, fb = st.fb || {};
   const ocrowd = role && st.crowd ? fresh(st.crowd[otherRole(role)]) : null;   // the other role's touches, in its colour
-  // crowd activity eases in/out so the nudge doesn't jump between updates
-  const goalA = (crowd && +crowd.a) || 0;
+  // crowd pressure (older admins sent only the share touched, a) eases in/out
+  // so the nudge doesn't jump between updates
+  const goalA = crowd ? +(crowd.p ?? crowd.a) || 0 : 0;
   activity += (goalA - activity) * (1 - Math.exp(-Math.min(dt, 0.1) / (goalA > activity ? 2 : 4)));
   // IDLE: the water melts away and nothing new grows; drawing and the shared
   // glow (always on in idle) keep going, pause doesn't apply. The cells fade

@@ -6,7 +6,8 @@
 // Shared state shape (what phones see):
 //   roles: { cosi: Ramp, cimsi: Ramp }  Ramp = {from,to,start,dur,over,tover,running}
 //   cmd:   { id, type, role }           one-shot action (random/clear/seed/...)
-//   fb:    { share, shareK, nudge, nudgeK, idle }   crowd feedback switches + idle mode (admin)
+//   fb:    { share, shareK, nudge, nudgeK, idle,     crowd feedback switches + idle mode (admin),
+//            crowdFull, nudgeRise, nudgeLeak, nudgeGamma }   + how the crowd map fills and the pressure builds
 //   crowd: { cosi: {m, a, t}, cimsi: ... }    combined touch map + activity (admin)
 //   net:   { ws }                        phones on a live connection (admin)
 //
@@ -26,7 +27,10 @@ export const ROLE_LABEL = { cosi: 'cosi', cimsi: 'čímsi' };
 export const WS_CAP = 80;                 // live phones; the rest poll (100 is the hard limit)
 const POLL_MS = 4000;
 
-export function defaultFb() { return { share: false, shareK: 0.5, nudge: false, nudgeK: 0.5, idle: false }; }
+export function defaultFb() {
+  return { share: false, shareK: 0.5, nudge: false, nudgeK: 0.5, idle: false,
+           crowdFull: 0.3, nudgeRise: 20, nudgeLeak: 30, nudgeGamma: 1.5 };
+}
 export function defaultState() {
   return {
     roles: {

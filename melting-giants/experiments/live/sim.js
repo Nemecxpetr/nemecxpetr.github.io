@@ -158,10 +158,44 @@ export function phaseAt(r, now) {
 // is cold, čímsi's is warm.
 export const touchDir = role => (role === 'cimsi' ? 1 : -1);
 
-// Crowd nudge: the share of a role's phones that are being touched (0..1)
-// pushes that role's phase the way its touches do (against the journey), by
-// up to NUDGE_MAX * strength.
-export const NUDGE_MAX = 0.15;
+// Crowd nudge: the role's crowd pressure (0..1, see stepPressure) pushes that
+// role's phase the way its touches do (against the journey), by up to
+// NUDGE_MAX * strength.
+export const NUDGE_MAX = 0.4;
+// Crowd pressure builds while a role's phones are being touched and leaks back
+// when they stop, so a short burst barely moves the water and a hall that keeps
+// touching carries it. The push is share^NUDGE_GAMMA (share = part of the
+// role's phones touched in the last 8 s), so a few phones count little and most
+// of the hall counts a lot. At full touch it rises by 1/NUDGE_RISE_S a second at
+// first (with the defaults it fills in about half a minute); it leaks back with a
+// time constant of NUDGE_LEAK_S. Steady state = share^GAMMA * LEAK/RISE, capped at 1.
+// These are the defaults; the admin's sliders override them (live/fb: nudgeRise,
+// nudgeLeak, nudgeGamma).
+export const NUDGE_GAMMA = 1.5, NUDGE_RISE_S = 20, NUDGE_LEAK_S = 30;
+export function stepPressure(p, share, dt, { rise = NUDGE_RISE_S, leak = NUDGE_LEAK_S, gamma = NUDGE_GAMMA } = {}) {
+  rise = Math.max(1, +rise || NUDGE_RISE_S); leak = Math.max(1, +leak || NUDGE_LEAK_S); gamma = Math.max(0.1, +gamma || NUDGE_GAMMA);
+  const goal = Math.pow(clamp(+share || 0, 0, 1), gamma) * leak / rise;
+  return clamp(goal + ((+p || 0) - goal) * Math.exp(-Math.max(0, dt) / leak), 0, 1);
+}
+
+// Crowd map: the admin adds up the phones' 2 s touch maps (0..1 per cell) into
+// a fading sum. scaleCrowd turns that sum into what the phones get: divided by
+// the size of the group, so a spot only fills up when a good part of the group
+// draws there, and through a soft knee instead of a hard cut. 1 = CROWD_FULL of
+// the group's phones drawing on a spot at full strength, shown as 0.86.
+export const CROWD_DECAY = 0.93;                    // per second, ~10 s half-life
+export const CROWD_FULL = 0.3;                      // default; the admin's slider overrides it (live/fb: crowdFull)
+const CROWD_STEADY = 1 - CROWD_DECAY ** 2;           // one phone's steady sum (sends every 2 s) back to 0..1
+// the crowd sliders (live/fb), falling back to the defaults above
+export const crowdTuning = fb => ({
+  full: +(fb && fb.crowdFull) || CROWD_FULL, rise: +(fb && fb.nudgeRise) || NUDGE_RISE_S,
+  leak: +(fb && fb.nudgeLeak) || NUDGE_LEAK_S, gamma: +(fb && fb.nudgeGamma) || NUDGE_GAMMA,
+});
+export function scaleCrowd(acc, players, out = new Float32Array(acc.length), full = CROWD_FULL) {
+  const k = 2 * CROWD_STEADY / (Math.max(1, players) * Math.max(0.02, +full || CROWD_FULL));
+  for (let i = 0; i < acc.length; i++) out[i] = 1 - Math.exp(-k * Math.max(0, acc[i]));
+  return out;
+}
 export function nudgedPhase(phase, role, fb, activity) {
   if (!fb || !fb.nudge || !activity) return phase;
   return clamp(phase + touchDir(role) * NUDGE_MAX * clamp(+fb.nudgeK || 0, 0, 1) * clamp(activity, 0, 1), 0, 1);

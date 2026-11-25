@@ -65,9 +65,18 @@ parameters, stored as `tover`). You can also touch a preview to try it out (not 
 ## Audience feedback, recording
 
 The admin page adds up the phones' touch maps once a second. For each role it shows
-players / touching / touches per minute and a small heat map. It writes a decaying crowd map
-plus `activity` (the share of that role's phones touched in the last 8 s) to `live/crowd`. Two
-switches with strength sliders (`live/fb`), both off by default:
+players / touching / touches per minute / pressure and a small heat map. It writes to `live/crowd`
+per role: the crowd map `m`, `a` (the share of that role's phones touched in the last 8 s) and the
+crowd pressure `p`.
+
+The crowd map is a fading sum of the phones' maps (~10 s half-life), scaled to the group before it
+is sent (`scaleCrowd` in `sim.js`): divided by the number of the role's phones and passed through
+a soft knee, so a spot fills up only when about a third of the group draws there (**full when**
+slider, default 30%, `CROWD_FULL`),
+one phone shows as a faint trace, and nothing is cut off flat. The admin's heat map shows the same
+scaled map the phones get.
+
+Two switches with strength sliders (`live/fb`), both off by default:
 
 - **shared crowd map**: every phone shows both crowds' glow, so screens react together. Only the
   glow (touch map) is shared, never touch-layer cells: the azure/amber cells grow only on the
@@ -75,8 +84,15 @@ switches with strength sliders (`live/fb`), both off by default:
   Its own role's crowd glows in its own colour and touch direction. The other role's crowd glows in
   that role's colour and pushes the other way: amber always warms, cyan always cools, and where both
   crowds touch they tug against each other.
-- **crowd nudge**: activity pushes the role's progress the touch way (cosi colder, čímsi warmer), up
-  to 0.15 × strength, on top of the progress slider. It eases in and out over a few seconds.
+- **crowd nudge**: the crowd pressure pushes the role's progress the touch way (cosi colder, čímsi
+  warmer), up to 0.4 × strength (`NUDGE_MAX`), on top of the progress slider. Pressure builds while
+  the role's phones are being touched and leaks back when they stop (`stepPressure`): the push is
+  share^curve, so a few phones count little and most of the hall a lot; with the whole group
+  touching it rises by 1 ÷ build-up each second at first (with the defaults it fills in about half a
+  minute), and it leaks back with the leak time constant. A crowd that keeps
+  touching settles at share^curve × leak ÷ build-up (capped at 1). Sliders under the nudge switch:
+  **build-up** (default 20 s), **leak back** (30 s), **crowd curve** (1.5). It only builds while the
+  nudge is on and not in IDLE, so switching it on starts from calm.
 
 Both only work while the admin page is **open and signed in**: it is the one doing the adding
 up. It resends the crowd map every 5 s (a worker timer keeps this going when the tab is in the
@@ -85,7 +101,9 @@ ignore a crowd map older than 15 s, so closing the admin fades the shared glow o
 freezing it.
 
 **● record** saves a snapshot every 10 s to `/log/<session>` (admin-only: progress, players,
-activity, touches/min, crowd maps). **download log** exports it as JSON.
+activity, pressure, touches/min, crowd maps). **download log** exports it as JSON. The crowd maps
+are logged as the phones get them, scaled to the group. Logs from before 2026-11-25 (the two
+concerts) hold the raw sum × 35 cut off at 35, so their maps are not comparable cell for cell.
 
 ## IDLE (between performances)
 
