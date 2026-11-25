@@ -504,6 +504,11 @@ function frame(t) {
       const { input, out } = c.tparams[k];
       if (!busy('tover' + role + k)) input.value = tp[k];
       out.textContent = Number((+tp[k]).toFixed(4));
+      if (k === 'cool') {                            // shown as half-life in seconds (the map fades by cool per touch generation)
+        const s = tp.cool > 0 ? Math.LN2 / -Math.log(1 - tp.cool) / tp.rate : Infinity;
+        out.title = `cool ${out.textContent} per generation`;
+        out.textContent = s === Infinity ? 'never' : `${s < 10 ? s.toFixed(1) : Math.round(s)} s`;
+      }
     }
   }
   $('masterVal').textContent = curPhase('cosi').toFixed(2);

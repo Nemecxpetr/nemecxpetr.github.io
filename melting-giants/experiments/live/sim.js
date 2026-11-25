@@ -115,9 +115,11 @@ const PROFILES = {
 // covers about IDLE_ICE of the screen, and the water settles: nothing new is
 // born, crowded or lonely liquid dies, and what's left sits in small still
 // clumps (Life-like survival on 2-3). So some ice and water stay, calm, with
-// room to draw around them. Touch layer + glow + crowd maps keep working as
-// usual. The pages also switch the sim to its smooth look (setSmooth) while idle.
-export const IDLE_ICE = 0.15;
+// room to draw around them. If there's no ice at all, one blob about IDLE_ICE
+// big is planted (idle can't freeze, so a tiny seed would stay tiny). Touch
+// layer + glow + crowd maps keep working as usual. The pages also switch the
+// sim to its smooth look (setSmooth) while idle.
+export const IDLE_ICE = 0.45;
 export const IDLE_PARAMS = { ...BASE, birth_lo: 8, birth_hi: 0, surv_lo: 2, surv_hi: 3, freeze: 0, freeze_nb: 8,
   melt: 0.05, melt_nb: 0, melt_on: 0, noise: 0, rate: 8, ice_target: IDLE_ICE };
 
@@ -177,7 +179,8 @@ export function nudgedPhase(phase, role, fb, activity) {
 //   span   how far a fully touched spot shifts the base layer's phase
 //   direct chance per generation that a fully touched base cell changes
 //          state outright: cosi's cold freezes liquid, čímsi's warmth melts ice
-//   cool   how fast the map fades per generation (0.004 ~ 10 s half-life)
+//   cool   how fast the map fades per generation (0.004 ~ 10 s half-life at rate 16;
+//          the admin shows the half-life in seconds next to the slider)
 //   show   opacity of the touch-layer cells over the base layer (the glow is separate)
 export const TOUCH_RANGES = {
   birth_lo: [0, 8, 1], birth_hi: [0, 8, 1],
@@ -186,7 +189,7 @@ export const TOUCH_RANGES = {
   melt:   [0, 1, 0.01], melt_nb:   [0, 9, 1],
   noise: [0, 0.05, 0.001], rate: [1, 60, 0.5],
   need: [0, 1, 0.01], fade: [0, 0.05, 0.001], glow: [0, 0.05, 0.001], finger: [0, 1, 0.01],
-  span: [0, 1, 0.05], direct: [0, 0.2, 0.005], cool: [0, 0.05, 0.001], show: [0, 1, 0.05],
+  span: [0, 1, 0.05], direct: [0, 0.2, 0.005], cool: [0, 0.05, 0.0005], show: [0, 1, 0.05],
 };
 const TOUCH_INT = new Set(['birth_lo', 'birth_hi', 'surv_lo', 'surv_hi', 'freeze_nb', 'melt_nb']);
 export const TOUCH_DEFAULT = {
@@ -712,9 +715,11 @@ export function createSim(canvas, { cols, rows, cell = 12, seed = true, role = '
       if (Math.random() < p) grid[y * W + x] = ICE;
     }
   }
-  // the tiny seed čímsi freezes from: a few cells somewhere in the middle third
+  // the tiny seed čímsi freezes from: a few cells somewhere in the middle third.
+  // When nothing can freeze (idle), the seed is planted at full target size.
   function plantSeed() {
     const at = [W * (0.33 + Math.random() * 0.34), H * (0.33 + Math.random() * 0.34)];
+    if (params.freeze <= 0) { iceSeed(Math.max(2, Math.round(Math.sqrt(params.ice_target * N))), [W / 2, H / 2]); return; }
     for (let tries = 0; tries < 5 && countIce() === 0; tries++) iceSeed(2, at);
     if (countIce() === 0) grid[Math.floor(at[1]) * W + Math.floor(at[0])] = ICE;
   }
