@@ -447,6 +447,14 @@ body {
   font: 400 0.95rem/1.7 var(--font-main);
 }
 
+/* a poem quoted as written: line breaks, spaces and tabs kept */
+.article-section blockquote.poem {
+  white-space: pre-wrap;
+  tab-size: 4;
+  text-align: left;
+  color: var(--fg);
+}
+
 .article-section a {
   color: inherit;
   text-decoration: underline;

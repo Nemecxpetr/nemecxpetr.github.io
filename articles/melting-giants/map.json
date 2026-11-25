@@ -4,7 +4,7 @@
     "title": "Melting Giants",
     "subtitle": "Six instruments, two beings, and a hall full of water",
     "author": "Petr Nemec",
-    "updated": "2026-11-22"
+    "updated": "2026-11-25"
   },
   "nodes": [
     { "id": "start", "label": "Melting Giants", "section": "start", "size": 22, "importance": 1 },
@@ -12,6 +12,7 @@
     { "id": "worlds", "label": "Pitch worlds", "section": "worlds", "size": 19, "importance": 2 },
     { "id": "water", "label": "The water", "section": "water", "size": 19, "importance": 2 },
     { "id": "control", "label": "Playing the room", "section": "control", "size": 18, "importance": 2 },
+    { "id": "concerts", "label": "Two concerts", "section": "concerts", "size": 19, "importance": 2 },
     { "id": "lineage", "label": "Studies", "section": "lineage", "size": 17, "importance": 3 },
     { "id": "join", "label": "Join", "section": "join", "size": 18, "importance": 2 }
   ],
@@ -22,6 +23,8 @@
     { "from": "beings", "to": "water" },
     { "from": "worlds", "to": "water" },
     { "from": "control", "to": "water" },
+    { "from": "control", "to": "concerts" },
+    { "from": "start", "to": "concerts" },
     { "from": "water", "to": "lineage" },
     { "from": "water", "to": "join" }
   ]
