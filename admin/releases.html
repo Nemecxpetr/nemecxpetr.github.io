@@ -141,7 +141,7 @@
       <p class="hint">
         Make a fine-grained token at
         <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>:
-        repository access <b>only pjotrgerman.github.io</b>, permission <b>Contents: Read and write</b>.
+        repository access <b>only nemecxpetr.github.io</b>, permission <b>Contents: Read and write</b>.
         It is saved only in this browser (do it once per phone / computer).
       </p>
       <input type="password" id="gh-token" autocomplete="off" spellcheck="false" placeholder="github_pat_…" />
@@ -240,7 +240,7 @@
     import { fetchStaticReleases, normalizeRemoteRelease, REMOTE_RELEASES_PATH } from "../js/releases-source.js";
     import { mergeIntoReleasesText, firebaseIdsInText } from "../js/releases-merge.js";
 
-    const GH = { owner: "Nemecxpetr", repo: "pjotrgerman.github.io", branch: "main", path: "assets/releases.json" };
+    const GH = { owner: "Nemecxpetr", repo: "nemecxpetr.github.io", branch: "main", path: "assets/releases.json" };
     const TOKEN_KEY = "releasesAdmin.githubToken";
 
     const SDK = "10.12.2";
@@ -665,7 +665,7 @@
           "ok", true, commitUrl ? { href: commitUrl, text: "see commit" } : null);
         startPrunePoll();
       } catch (error) {
-        const hint = error.status === 401 ? " (token wrong or expired)" : error.status === 403 || error.status === 404 ? " (token needs Contents: Read and write on pjotrgerman.github.io)" : "";
+        const hint = error.status === 401 ? " (token wrong or expired)" : error.status === 403 || error.status === 404 ? " (token needs Contents: Read and write on nemecxpetr.github.io)" : "";
         setStatus(`Merge failed: ${error.message}${hint}`, "err", true);
       } finally {
         merging = false;
