@@ -1,0 +1,2590 @@
+{
+ "session": "2026-11-24-18-53-02",
+ "map": "8x16 base-36 per cell, row by row",
+ "rows": [
+  {
+   "fb": {
+    "idle": true,
+    "nudge": false,
+    "nudgeK": 0.4,
+    "share": false,
+    "shareK": 0.2
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0,
+     "crowd": "0000000000001110001110100010001000124c540107650001354200018540000168000000570000006350000068410000443000000000000000000000000000",
+     "live": 3,
+     "phase": 1,
+     "players": 3,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 0,
+     "tpm": 199
+    },
+    "cosi": {
+     "activity": 0.33,
+     "crowd": "00000000000000000000000000000000000000000000000000008400068f7d4008050ba007044b300568cc000058830000000000000000000000000000000000",
+     "live": 3,
+     "phase": 0,
+     "players": 3,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 1,
+     "tpm": 168
+    }
+   },
+   "t": 1795546383302
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.25,
+     "crowd": "000000000000000000000000000000000001263201033300002321000042200000347a000024g000003220000034210000222000000000000000000000000000",
+     "live": 4,
+     "phase": 1,
+     "players": 4,
+     "poll": 0,
+     "progress": 1,
+     "running": false,
+     "target": 1,
+     "touching": 1,
+     "tpm": 229
+    },
+    "cosi": {
+     "activity": 0,
+     "crowd": "00000000000000000000000000000000000000000000000000004200034736200402055003022510023466000024410000000000000000000000000000000000",
+     "live": 5,
+     "phase": 0,
+     "players": 5,
+     "poll": 0,
+     "progress": 0,
+     "running": false,
+     "target": 0,
+     "touching": 0,
+     "tpm": 168
+    }
+   },
+   "t": 1795546393305
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0,
+     "crowd": "00000000000000000000000000000000000013110005770000457670007760000588450005a28000001110000012100000111000000000000000000000000000",
+     "live": 3,
+     "phase": 1,
+     "players": 3,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 0,
+     "tpm": 343
+    },
+    "cosi": {
+     "activity": 0.14,
+     "crowd": "0000000000000000000000000000000000000000000004c0000099530126c9150206b6700209bg100178770000a8610000934000008000000000000000000000",
+     "live": 7,
+     "phase": 0,
+     "players": 7,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 1,
+     "tpm": 342
+    }
+   },
+   "t": 1795546403305
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0,
+     "crowd": "00000000000000000000000000000000000001100002330000233330003330000244220003514000001010000011000000010000000000000000000000000000",
+     "live": 3,
+     "phase": 1,
+     "players": 3,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 0,
+     "tpm": 343
+    },
+    "cosi": {
+     "activity": 0.22,
+     "crowd": "0000000006dkje00bc000i008000bh000000i0000000026000004531011364620103534001055800013443000054300000412000004000000000000000000000",
+     "live": 9,
+     "phase": 0,
+     "players": 9,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 2,
+     "tpm": 529
+    }
+   },
+   "t": 1795546413310
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.25,
+     "crowd": "00000000000000000000000000000000000001000001cgh0001bc1f0001b8a60012g1d00012je700000d90000000000000000000000000000000000000000000",
+     "live": 4,
+     "phase": 1,
+     "players": 4,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 1,
+     "tpm": 430
+    },
+    "cosi": {
+     "activity": 0.33,
+     "crowd": "000000000369860055000800400058000007e00g009705ei08607ggd6501d6s1800e81u0c0bad3k7fb12wgml0022pc8004djycm069dcp0807b0e00000e000000",
+     "live": 9,
+     "phase": 0,
+     "players": 9,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 3,
+     "tpm": 1312
+    }
+   },
+   "t": 1795546424310
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "0000000007730000000650000d8453000myqjd000dikqvd06bmnftm067criri067fyfck077hoiljd3cgqzpve0dd3zmo000ixzn00000hl0000000000000000000",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 3,
+     "tpm": 1066
+    },
+    "cosi": {
+     "activity": 0.45,
+     "crowd": "30007a38913vxs66b26xzzpce36zznjhb64zzdhkb6hzbjbjagoz9n7jefy4f8o3ldzla9j0guzxk2f3edcifcaae6gdgb40cajek5a0ificm040eb9i40004c300000",
+     "live": 11,
+     "phase": 0,
+     "players": 11,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 5,
+     "tpm": 2479
+    }
+   },
+   "t": 1795546435306
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 1,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.29,
+     "crowd": "00000000838ddfe060ca935c664ba7aj6bglc60b4e9akf6b3laedqba3d6oztc63odwkef73ejmfhva2eioqis7lincxnf0hcmoup00m0fjy000mwtr000300000000",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 2,
+     "tpm": 2121
+    },
+    "cosi": {
+     "activity": 0.27,
+     "crowd": "10003f19e11mmja9iahuzso6ocaqzfm85ibjzdma5idvf9k95pkxeem97olpe4p2ajxacep08mujd6717bj9ca557alnb520699fm3508796b0207548200026200000",
+     "live": 11,
+     "phase": 0,
+     "players": 11,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 3,
+     "tpm": 2852
+    }
+   },
+   "t": 1795546445313
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 1,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.29,
+     "crowd": "000dedid424b6cc83069a42e335d54bl35hadcdg27kcqxad1a5dozis163rszhf1b6zvzs927czzzz5179ypqq3a9benuha86agmx0eb07gnn00bfeg6h0200000000",
+     "live": 7,
+     "phase": 0.841,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.781,
+     "running": true,
+     "target": 0.54,
+     "touching": 2,
+     "tpm": 2882
+    },
+    "cosi": {
+     "activity": 0.46,
+     "crowd": "10006a64703witf5gocvsss3hb5stnx88e6ytul98eazhmjfofmplqznfipkuwz6ikvjpzrdhpyrsztdfdojozm2d7stpyd0aakvtd20cj9hlc10b32cf00013100000",
+     "live": 13,
+     "phase": 0.164,
+     "players": 13,
+     "poll": 0,
+     "progress": 0.219,
+     "running": true,
+     "target": 0.46,
+     "touching": 6,
+     "tpm": 3905
+    }
+   },
+   "t": 1795546455320
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 1,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "000f6f8625cib5j4ba9b59c6a1962c9a89c5ed677fctzz467rzzvzzm9zztqzzj9zxzuzzi8zzzzzog8kzzzgmfdanjmmhfeaszjo0befoxtv005767380100000000",
+     "live": 7,
+     "phase": 0.339,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.277,
+     "running": true,
+     "target": 0,
+     "touching": 3,
+     "tpm": 4337
+    },
+    "cosi": {
+     "activity": 0.71,
+     "crowd": "0c03ehijhonzzzpywzzzzzzzkzzzzxzzczzzzzzzpzzzzzzzozzzzzzzizzzzzzozzzzzzzxxzzzzzzixuzzzzz6zizzzzx5pzzzzza4hyzzzkd089oir0600705c060",
+     "live": 14,
+     "phase": 0.621,
+     "players": 14,
+     "poll": 0,
+     "progress": 0.723,
+     "running": true,
+     "target": 1,
+     "touching": 10,
+     "tpm": 8204
+    }
+   },
+   "t": 1795546466316
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "0007b74312fdc28258hjahe34bibgbb44lzii6b33yzvzzn33zzzzzzagzzzzzz9hzzzzzz8gzzzzzzapzzzzou7tzxzzjo7izuzzzd5dvzvzzi02ijaak7600000008",
+     "live": 7,
+     "phase": 0,
+     "players": 7,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 4,
+     "tpm": 6599
+    },
+    "cosi": {
+     "activity": 0.53,
+     "crowd": "ikjttkhhnzzszzzzwzozzzwzzzzzzzzzuzzzzzzsszzzzzzprzzzzzzlrzzzzzzizzzzzzzwpzzzzzzllzzzzzzmjzzzzzzffzzzzzzmhzzzzvzujhzwxzzr8fruzob3",
+     "live": 15,
+     "phase": 1,
+     "players": 15,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 8,
+     "tpm": 12903
+    }
+   },
+   "t": 1795546477304
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "07735321ilzyh4m9iwdfpzvdozyevzsa9zzzwcuc9zztzzzg8zzzzzz5izzzzzw4hzzzzzz4dzzzzzs5izzzzzp3kznzzzm3dzuyzzl2bzrlzzz31edaja3300600004",
+     "live": 7,
+     "phase": 0.525,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.525,
+     "running": true,
+     "target": 1,
+     "touching": 4,
+     "tpm": 8310
+    },
+    "cosi": {
+     "activity": 0.64,
+     "crowd": "yzopusxyzznsyqtzzvczzzxznxzzzzzzezzzzzztdzzzzzzzdzzzzzzqdzzzzzzzpzzzzzzsczzzzzzkauzzzzzr9zzzzzqz7zzzzzxzfzzzxmzzszzjgpzz7rrtzszh",
+     "live": 14,
+     "phase": 0.475,
+     "players": 14,
+     "poll": 0,
+     "progress": 0.475,
+     "running": true,
+     "target": 0,
+     "touching": 9,
+     "tpm": 14773
+    }
+   },
+   "t": 1795546487312
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.33,
+     "crowd": "03567548dfof86lg8ibgbmmkbqheilhf4yzomhlf4qqskzngbuvrkzv6iuvrzzj2frxznzl2fnwznym7mrwzzrk79gawxui86mekswgb5nijvwo13cdfe47187a7egja",
+     "live": 6,
+     "phase": 1,
+     "players": 6,
+     "poll": 0,
+     "progress": 1,
+     "running": false,
+     "target": 1,
+     "touching": 2,
+     "tpm": 8011
+    },
+    "cosi": {
+     "activity": 0.47,
+     "crowd": "fidutjjinzxuzysqyzzzzzztruzzzzzzmzzzzzzzxzzzzzzztzzzzzzzozzzzzzzpzzzzzzwgzzzzzzmazzzzzzzkzzzzzzzfzzzzzzrgzzzzzuklrzzmpskelouotz8",
+     "live": 17,
+     "phase": 0,
+     "players": 17,
+     "poll": 0,
+     "progress": 0,
+     "running": false,
+     "target": 0,
+     "touching": 8,
+     "tpm": 18834
+    }
+   },
+   "t": 1795546498303
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.5,
+     "crowd": "0233332467b743a849586aaa5d879a872hqcb8a72kodiib85xqdhjf39zvdzr917zxlrra17pzxmgb4bhzxxd9348tqrl943tzozx85fztotrk12e67b73143537895",
+     "live": 6,
+     "phase": 1,
+     "players": 6,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 3,
+     "tpm": 7549
+    },
+    "cosi": {
+     "activity": 0.44,
+     "crowd": "7tlsrvierzzzzzrgzzzzzzznzzzzzzztyzzzzzzzzzzzzzzpzzzzzzzlyzzzzzzvzzzzzzznzzzzzzziwzzzzzzpzzzzzzzrszzzzzznezzzzzyffrzzfse97acfcoj4",
+     "live": 16,
+     "phase": 0,
+     "players": 16,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 7,
+     "tpm": 22065
+    }
+   },
+   "t": 1795546508311
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "0cepg1x23nmcifz89fkhikup8fgjcmur1nidqtzw1jggoivj3tkdgku14zzkwqn03zzlztl04tzgkwnb5uztyrfg2rvzwadg4vzzzpghfzwzzzupephsvwzh2abac842",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 4,
+     "tpm": 7907
+    },
+    "cosi": {
+     "activity": 0.5,
+     "crowd": "7zxyzzzqwzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzwzzzzzzznzzzzzzzwzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzxzzzzzzztzzzzzzzmzzzzzzx87icmsi8",
+     "live": 14,
+     "phase": 0,
+     "players": 14,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 7,
+     "tpm": 25332
+    }
+   },
+   "t": 1795546518315
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.15,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "086b71f1chddjhn68hkgddimyzwokjihqzzahqrnisvsfduiftuzzzzbdzvzzyphdymzzpemmzrsonikpzzzskdpvzzzzikmllztzzhgmxystzueabaimvg814546421",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.99,
+     "running": true,
+     "target": 0.86,
+     "touching": 4,
+     "tpm": 7871
+    },
+    "cosi": {
+     "activity": 0.31,
+     "crowd": "3kffuhiceokvzpnhtwzzzzziuuzzzzzhzzzzzzznzzzzzzzwzzzzzzzxzzzzzzzxzzzzzzzxzzzzzzzzzzzzzzzzxzzzzzzztzzzzzznkzzzzzygduzzyzif33npdd84",
+     "live": 13,
+     "phase": 0.001,
+     "players": 13,
+     "poll": 0,
+     "progress": 0.01,
+     "running": true,
+     "target": 0.14,
+     "touching": 4,
+     "tpm": 26373
+    }
+   },
+   "t": 1795546529305
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.15,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "0gpmebibjgklzvvpihztcbjlmlztnqzjitzmhzzrftzzpzyeezzzzzqbmzzzzzxmoxxzuylgmurzqldfmzzxdh6hjzzzzg9gmzzzzzjgnpzxvzzxcejqqqj96987c750",
+     "live": 7,
+     "phase": 0.641,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.629,
+     "running": true,
+     "target": 0.6,
+     "touching": 4,
+     "tpm": 7771
+    },
+    "cosi": {
+     "activity": 0.54,
+     "crowd": "yzzzzywvdnzzzzcikzzzzzwnnzzzzzzrqzzzzzzaszzzzzzntzzzzzzqszzzzzzkvzzzzzzszzzzzzzkmzzzzzzllzzzzzzsdzzzzzzgizzzzzz9nzzzzrt729ahkd72",
+     "live": 13,
+     "phase": 0.36,
+     "players": 13,
+     "poll": 0,
+     "progress": 0.371,
+     "running": true,
+     "target": 0.4,
+     "touching": 7,
+     "tpm": 26440
+    }
+   },
+   "t": 1795546540303
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 0.8
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "ahcfb59698aioffi98ridbkebaqtlut99ewslztd7ezvzzm77iuzzzc5aqwzzxgbhttppza8blwzzz67bszzzz789zzzzzc8ilzzzzs8lmxtxzrg6hikknje34436330",
+     "live": 7,
+     "phase": 0.6,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.6,
+     "running": true,
+     "target": 0.6,
+     "touching": 4,
+     "tpm": 6647
+    },
+    "cosi": {
+     "activity": 0.62,
+     "crowd": "pzzzzvnlxzzzzpzpnzzzzzsqzzzzzzzntzzzzzzgpzzzzzzhzzzzzzzhzzzzzzzjzzzzzzziuzzzzzzekzzzzzxelzzzzzznczzzzzzfezzzzzvilzzunqmi3mbejn84",
+     "live": 13,
+     "phase": 0.4,
+     "players": 13,
+     "poll": 0,
+     "progress": 0.4,
+     "running": true,
+     "target": 0.4,
+     "touching": 8,
+     "tpm": 26912
+    }
+   },
+   "t": 1795546550303
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0.8
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "5867534359dfia79entdcje7dpuiaje5bqsjhykg3vrmwzld3tumzyrb7hlzzgicferzyvg7bagzzzn3bdozzzy4ewvzzzy49gzzzzu4ntwzyzx8lpcaixxt7d22cdeg",
+     "live": 7,
+     "phase": 0.54,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.54,
+     "running": true,
+     "target": 0.38,
+     "touching": 3,
+     "tpm": 8103
+    },
+    "cosi": {
+     "activity": 0.31,
+     "crowd": "cpnizwlagtpzzwpfbvzzzzzqjxzzzzzuezzzzzzdfzzzzzzdpzzzzzzcxzzzzzz9zzzzzzz9tzzzzzziazzzzzygazzzzzzo6zzzzzzzgzzzzzzqfzyfbdv92b579b82",
+     "live": 13,
+     "phase": 0.46,
+     "players": 13,
+     "poll": 0,
+     "progress": 0.46,
+     "running": true,
+     "target": 0.62,
+     "touching": 4,
+     "tpm": 26687
+    }
+   },
+   "t": 1795546560326
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0.8
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "44332baf6aedili4cjnfbek5gluid9f2dtnfdk979ijajp9b8ndaulci3aiozc8fakqvvt7dgjezzzkcnfzzzzvetzzzzznedxzzzlncgkomfgf49b548ffd36115667",
+     "live": 7,
+     "phase": 0.38,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.38,
+     "running": true,
+     "target": 0.38,
+     "touching": 4,
+     "tpm": 8948
+    },
+    "cosi": {
+     "activity": 0.38,
+     "crowd": "cqrfqml5jonrzth7jzzzzzzorzzzzzzvizzzzzzcrzzzzzzfzzzzzzzhzzzzzzzkzzzzzzzcpzzzzzzdazzzzzz7izzzzuzb8zzzzzziezzzzzynczqlddo415264541",
+     "live": 13,
+     "phase": 0.62,
+     "players": 13,
+     "poll": 0,
+     "progress": 0.62,
+     "running": true,
+     "target": 0.62,
+     "touching": 5,
+     "tpm": 24765
+    }
+   },
+   "t": 1795546571309
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0.8
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "221215573bheih9269jdhhte8hph9bl66ngjhio35kwqszl54npwzqv9bvuzznu75ryzwvq78zpztzs6bxxzzzo7evzzzzj76zzzzjs68evwmve256hf6cb623047333",
+     "live": 7,
+     "phase": 0.356,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.356,
+     "running": true,
+     "target": 0.22999999999999998,
+     "touching": 4,
+     "tpm": 8063
+    },
+    "cosi": {
+     "activity": 0.38,
+     "crowd": "6oqfwjg2uqvyznv6kzzzzyzoqzzzzzzqpzzzzzzizzzzzzzrzzzzzzzzzzzzzzzzzzzzzzzmzzzzzzznzzzzzzzmzzzzzvzjnzzzzzzlpzzzzzzpsxnryfsa52139269",
+     "live": 13,
+     "phase": 0.644,
+     "players": 13,
+     "poll": 0,
+     "progress": 0.644,
+     "running": true,
+     "target": 0.77,
+     "touching": 5,
+     "tpm": 22585
+    }
+   },
+   "t": 1795546581319
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0.8
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "1111122315db88413fqswon6asuqwqjbbzpszxt9izzzzxzgdzzzzzzlizzzzzzdfzzzzzz8nzvzzzu7kzzzzzx6lnzzzzm8lszzzdd7aekzjk9462dhc59345568532",
+     "live": 7,
+     "phase": 0.23,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.23,
+     "running": false,
+     "target": 0.22999999999999998,
+     "touching": 4,
+     "tpm": 8883
+    },
+    "cosi": {
+     "activity": 0.42,
+     "crowd": "3bccf971kkzzzme39zzzzntbhzzzzzzgtzzzzzz8pzzzzzzcqzzzzzzzmzzzzzzzqzzzzzzeqzzzzzzarzzzzzzpuzzzzzzhbzzyzzz9bzzwzzzbcuzzztue21658dc4",
+     "live": 12,
+     "phase": 0.77,
+     "players": 12,
+     "poll": 0,
+     "progress": 0.77,
+     "running": false,
+     "target": 0.77,
+     "touching": 5,
+     "tpm": 20467
+    }
+   },
+   "t": 1795546592308
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0.8
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "00006a111268cb901ihpqio34fhllppbfwrsxpkbftwzxtlebzzntpzedzzzsqzafxzzzqtiuqxtxzklmttzzzskpzzzzzjmkzzzzosmllrzszqnd9ehinf672737281",
+     "live": 7,
+     "phase": 0.868,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.868,
+     "running": true,
+     "target": 1,
+     "touching": 3,
+     "tpm": 8370
+    },
+    "cosi": {
+     "activity": 0.5,
+     "crowd": "155674309ewnla61bzujihx5ezzzzzz7zzzzzzz4nzzpzzz5nzzzzzzghzzxzzznnzzzzzzazzzzzzzjvzzzzzzgjzzzzzz85znowxw48zzspvm86ppuzord10323652",
+     "live": 12,
+     "phase": 0.132,
+     "players": 12,
+     "poll": 0,
+     "progress": 0.132,
+     "running": true,
+     "target": 0,
+     "touching": 6,
+     "tpm": 17498
+    }
+   },
+   "t": 1795546603303
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 0.8
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "00003501fdbkj540eexzzpc1ejouqxr5lutzzzw6jzzzzxz7jzzwzzzajzzzzzz9gzzzzzydkzrzzzzdbtyzzzzacxwzzzwk9trzzwmjafuyeqmo64789bha41313690",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 4,
+     "tpm": 9017
+    },
+    "cosi": {
+     "activity": 0.5,
+     "crowd": "1233322047gba5315ie9jxg27uzzzzn4izzzzzz2bzvfzzz3bzzzzzz88zzrzzzbbzzzzwz5hzzzzzzffzzzzzz89zzzzzi42zjzzzp24vpkjlb43gnoocd60f112331",
+     "live": 12,
+     "phase": 0,
+     "players": 12,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 6,
+     "tpm": 15963
+    }
+   },
+   "t": 1795546613306
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.4,
+    "share": true,
+    "shareK": 0.3
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "0dbcbe8elhgkkkxf6qwzzsprnoszzzttpnzzzzzzkuzzzzzimzzzzzzn8pzzzzziotszzzzfjsnzzzw6huzzzzzadzzzzzxuozuyzosibizxntuq3236e88521112340",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 4,
+     "tpm": 9074
+    },
+    "cosi": {
+     "activity": 0.42,
+     "crowd": "013d65c65dovwg67bjzzzzlbgzzzzzz8yzzzzzzczzzzzzzszzzzzzzdqzzzzzzqszzzzzzkyzzzzzznpzzzzzzapzzzzzz9fzzzzzp6fzojot58hqzkyb960jaba650",
+     "live": 12,
+     "phase": 0,
+     "players": 12,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 5,
+     "tpm": 14807
+    }
+   },
+   "t": 1795546624306
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.7,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.5,
+     "crowd": "0abc8c46bcbkgdf76jmzxdgckqtvznfdqzzzzzzvixsjrzz8nvynzyza4mmzzxzdbonyzpvc9wpmyzx3cizzzthb6hszzzfdbghrplc858pshjic7f88634217101120",
+     "live": 6,
+     "phase": 1,
+     "players": 6,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 3,
+     "tpm": 8475
+    },
+    "cosi": {
+     "activity": 0.27,
+     "crowd": "002632532djqrebhhzzzvziajzzzzzz7fzzzzzzehzzmvzzvkzzzzzzfczzvzyzudzzzzzzifzzzzzzpbzzzzzzgbyzzwzzz7qrzztrp7ibgznok8cj9srv809454760",
+     "live": 11,
+     "phase": 0,
+     "players": 11,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 3,
+     "tpm": 14668
+    }
+   },
+   "t": 1795546635304
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.7,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.63,
+     "crowd": "0eb646236pmiggff3wjvsutaalkyzzp6dsvzzzzu9zzzzzzjezzzzzvc7zzzzzvhcszszztcizzmzzzmkzzzzxui8mzzzzj7bcidjzc44erjhokm6blc795103079710",
+     "live": 8,
+     "phase": 0.764,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.699,
+     "running": true,
+     "target": 0.53,
+     "touching": 5,
+     "tpm": 8159
+    },
+    "cosi": {
+     "activity": 0.3,
+     "crowd": "0013116e1gjmnimg8tnqqzu99xzzzzzfgzzzrzzhczvupzzzatzzzzzdczzyzzzlizzzzzzmlzzzzzzpitzzzzzjglzzzzzy7nwzzkkr395kxbc94694edf404222330",
+     "live": 10,
+     "phase": 0.273,
+     "players": 10,
+     "poll": 0,
+     "progress": 0.301,
+     "running": true,
+     "target": 0.47,
+     "touching": 3,
+     "tpm": 13772
+    }
+   },
+   "t": 1795546645308
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.7,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "065328712ba877hb1feroogegi9lznkacjkzzvqe9nzzzzh99szzzte63zzzzzog6nzzzzd58rzzytma9mzzzzlk4agzzzpg5586zzxi27cclkhs65aalok301034359",
+     "live": 7,
+     "phase": 0.59,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.53,
+     "running": true,
+     "target": 0.53,
+     "touching": 4,
+     "tpm": 7409
+    },
+    "cosi": {
+     "activity": 0.1,
+     "crowd": "000111361c9aaewi4kihmvrb4fizyzzj7jssmzz85hrqrwui4jzzwvn65zzmynl98tzkwqsa9nolqwzb8dqyirn979lxjhhf3aevw99c1429l5542342c67202111210",
+     "live": 10,
+     "phase": 0.45,
+     "players": 10,
+     "poll": 0,
+     "progress": 0.47,
+     "running": true,
+     "target": 0.47,
+     "touching": 1,
+     "tpm": 11819
+    }
+   },
+   "t": 1795546656303
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.7,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "0bb9a431clcbgonca77dinrccifezzo5citzzzz74kzzzvz4bzpzzuzc9znzzzzjkvzzzzzbbqzzzxzk4qzzzzng9qzzzzc856ykzzg913znzf8e39s5gg9201d62234",
+     "live": 7,
+     "phase": 0.456,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.413,
+     "running": true,
+     "target": 0.28,
+     "touching": 3,
+     "tpm": 7635
+    },
+    "cosi": {
+     "activity": 0.25,
+     "crowd": "068800136b45cel88hgginkf2dfogltjhkllvzwc8fjpsmkj5gzzmlzl9zzhnnylagq9gjwqahognvzf9cnmlppe8almfqvh6acrkhj6175ejafb5676bbb501010115",
+     "live": 8,
+     "phase": 0.566,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.587,
+     "running": true,
+     "target": 0.72,
+     "touching": 2,
+     "tpm": 11159
+    }
+   },
+   "t": 1795546666310
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.7,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "0c544210gzyylih54kigyll55vsaqzg2bzzzvzz5cuzzsvzdazxzzwztaztzzrzl9zzzzzyf9zzzzzyb6zzzzzl74zzzzzqa2szzzlqf0tzzzjo9duzzqha107ojc312",
+     "live": 7,
+     "phase": 0.331,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.28,
+     "running": true,
+     "target": 0.28,
+     "touching": 4,
+     "tpm": 8186
+    },
+    "cosi": {
+     "activity": 0.25,
+     "crowd": "03340011352266a44a778a971bbhded9a9eckie58ddhifcc8jhnalx9erskzzzdchzzzzzjfzzzzzvhdzznpztg7suqlpziehqrpts9dgjstqx98llhphf605766302",
+     "live": 8,
+     "phase": 0.694,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.72,
+     "running": true,
+     "target": 0.72,
+     "touching": 2,
+     "tpm": 10442
+    }
+   },
+   "t": 1795546677303
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.35,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "062ccc10tzzzzzu3jzzzzzz5zzqftvz1whrmvxz7kvuzjzz6pzzzzzzgazzzzzzubzzzzzzhazzzzzzfezzzzzx3ezzzzzp59szzzvg70mzzzqc56jzzzn9079uok661",
+     "live": 7,
+     "phase": 0.257,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.231,
+     "running": true,
+     "target": 0.06000000000000005,
+     "touching": 3,
+     "tpm": 8507
+    },
+    "cosi": {
+     "activity": 0.25,
+     "crowd": "7qinbbhbkmutsyohcpfpzzv3dfzzzr645rzzj97346lg976649ji7eg57dtgqzs66cpzzzm97tzzxxf88tpling83kfkhjh97bdjije5689iihg54aadgd7302353601",
+     "live": 8,
+     "phase": 0.755,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.769,
+     "running": true,
+     "target": 0.94,
+     "touching": 2,
+     "tpm": 8221
+    }
+   },
+   "t": 1795546687308
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.35,
+    "share": true,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.33,
+     "crowd": "03155500dxyrkgd18qopvup2klc7det0eccaefz79mig8oz3butzzzzgdwwzztzd5uzzzoz84qzzzro76nzvzzk26mxwzxg24dquzz730tzzzzztdyzpmgc634db9330",
+     "live": 6,
+     "phase": 0.084,
+     "players": 6,
+     "poll": 0,
+     "progress": 0.06,
+     "running": false,
+     "target": 0.06000000000000005,
+     "touching": 2,
+     "tpm": 8685
+    },
+    "cosi": {
+     "activity": 0.33,
+     "crowd": "3msg5ifakrzxvzzmgzzzzzzmcvzzzzzmgzzzzzzyezevzzxzfzeuzzzxhzvwzzzzdzzzzzzzgzzzzzzzmzzzzzwzuzzzzzzzezzswqzzizzxszzzdiqzzmxj01bbd307",
+     "live": 9,
+     "phase": 0.923,
+     "players": 9,
+     "poll": 0,
+     "progress": 0.94,
+     "running": false,
+     "target": 0.94,
+     "touching": 3,
+     "tpm": 8689
+    }
+   },
+   "t": 1795546698304
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0.35,
+    "share": false,
+    "shareK": 0.4
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.5,
+     "crowd": "011222006ffc97614cbbeeb1995666d076646ao34a87glo15edszzz76eiwzzz62ewzzkx42czzzmp33areqnf13afemkc126cekj310dutukjd6fgba75312654110",
+     "live": 6,
+     "phase": 0.902,
+     "players": 6,
+     "poll": 0,
+     "progress": 0.902,
+     "running": true,
+     "target": 1,
+     "touching": 3,
+     "tpm": 7710
+    },
+    "cosi": {
+     "activity": 0.33,
+     "crowd": "1chfkfb9fllvmmqkizzzyzqmhpzzzzztqwzzzzzztzswzzzywzwzzzzotzzzzzzvozzzzzzyozzzzzzzqzzzzzzqqzzzyuzvazszmkzydzzsonuz9gfjnfi9005a6103",
+     "live": 9,
+     "phase": 0.096,
+     "players": 9,
+     "poll": 0,
+     "progress": 0.096,
+     "running": true,
+     "target": 0,
+     "touching": 3,
+     "tpm": 10019
+    }
+   },
+   "t": 1795546709304
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.33,
+     "crowd": "019811008algibc27ga5clr04c9adoa03698qiw1249eufs1266losz336diqkz316mpmbz215sqiooa15gafzz81577mzs01356dbi106ddd9k6377543b1113221d0",
+     "live": 6,
+     "phase": 1,
+     "players": 6,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 2,
+     "tpm": 6809
+    },
+    "cosi": {
+     "activity": 0.11,
+     "crowd": "15879754799eaac98ghjfkca8bjliggdcernqomgdicelnpfflfikqtbdprorppeblyvvsofbtpwzzohevqpikhccqntjehe4kdiecgg6ggdbheg4778b78400243102",
+     "live": 9,
+     "phase": 0,
+     "players": 9,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 1,
+     "tpm": 9225
+    }
+   },
+   "t": 1795546720302
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.55,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.33,
+     "crowd": "00441100idadggd16zp8dfq02zyb9cd61iuvl9f769azzdk87dfzpdi27ajszdj14elmu5k10frlsjzc1jfabzz41e89zzy03h8ezye55a6inaa35ib82261ba99cak0",
+     "live": 6,
+     "phase": 1,
+     "players": 6,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 2,
+     "tpm": 5820
+    },
+    "cosi": {
+     "activity": 0.33,
+     "crowd": "6bdbgmj2ktzzzzziyzyzzzsn9pzzzzlghzzzzzzjevjzzzzcntswzzz5czzzzwyejzzzzzn75zzzyzk87xzzszf66gjwkfd72a6fgd88388ede782334534200121001",
+     "live": 9,
+     "phase": 0,
+     "players": 9,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 3,
+     "tpm": 9952
+    }
+   },
+   "t": 1795546730302
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.55,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.33,
+     "crowd": "002200009dddg8613zjadjk01qg54ao61lfihan83s9yi7j43e7sibn53d9hyci12fmfedi00frgknu60mdc6zz20ibapzo01g7dzzb38c3goi516icef93055446590",
+     "live": 6,
+     "phase": 0.917,
+     "players": 6,
+     "poll": 0,
+     "progress": 0.89,
+     "running": true,
+     "target": 0.74,
+     "touching": 2,
+     "tpm": 4919
+    },
+    "cosi": {
+     "activity": 0.22,
+     "crowd": "366fjb91aeqszxlegohzxtmh4nuzpzk8arwzyzzjapmxizzibrtzwzt8avzzvvoagrzzpmq49yzzptj9fspzqkl9blntkhl3iid78ibgfovqstokkkdlljkjgjhiec80",
+     "live": 9,
+     "phase": 0.085,
+     "players": 9,
+     "poll": 0,
+     "progress": 0.11,
+     "running": true,
+     "target": 0.26,
+     "touching": 2,
+     "tpm": 9912
+    }
+   },
+   "t": 1795546740302
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.55,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "00110000766efd30vog5hga0zz8b6ec3qzonglb4rzomgfh2nzhhomz8azdvzzz86zzzzwh9gizukzzmhgxzmzz1ffqbkzz01l7cizz1462fhkq13967741032223250",
+     "live": 7,
+     "phase": 0.722,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.689,
+     "running": true,
+     "target": 0.62,
+     "touching": 3,
+     "tpm": 4374
+    },
+    "cosi": {
+     "activity": 0.38,
+     "crowd": "ai8kh990ejhrupkhisezrsjidomzpzrckopzvzzzjzpzkzzsszwzyzzcuzzzszz8mzzzpzz5jzzzvzwckzszzztfjzpxzxzefxekhlzg7tpvnjjiaodpafdf8d897640",
+     "live": 8,
+     "phase": 0.282,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.311,
+     "running": true,
+     "target": 0.38,
+     "touching": 3,
+     "tpm": 10490
+    }
+   },
+   "t": 1795546750302
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 1,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "06777750c99cfeqfzjb2cedczz9bgdnesznnifednzpmfjhehzwcghm9bzqhowh99zpmpn8hfkteetzsqrlnuzzcbecatzzc3c3cezz6281foyo518ja981011111120",
+     "live": 7,
+     "phase": 0.684,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.62,
+     "running": true,
+     "target": 0.62,
+     "touching": 3,
+     "tpm": 4714
+    },
+    "cosi": {
+     "activity": 0.25,
+     "crowd": "597a844079clojrt9jlzozzx6vszzzzgfzzzzzzunzzzzzziwzzzzzzjxzzzzzzlyzzzzzzqxzzzzzzzuzwzzvpfuzxzzvvcdt9mlkxe4mclimjf5c6c576746443320",
+     "live": 8,
+     "phase": 0.335,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.38,
+     "running": true,
+     "target": 0.38,
+     "touching": 2,
+     "tpm": 8985
+    }
+   },
+   "t": 1795546760304
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 1,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.14,
+     "crowd": "03333320544676b7zi515665zz4576a6kzma8766hzsa7886fzw678a4czo8be89bzlabalzbdd66fzmccaadzz55664dzz526257zx31307bzq21485430011001010",
+     "live": 7,
+     "phase": 0.502,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.47,
+     "running": true,
+     "target": 0.42000000000000004,
+     "touching": 1,
+     "tpm": 5184
+    },
+    "cosi": {
+     "activity": 0.25,
+     "crowd": "bizaf980czvnpnthtzmztzzzqzkuuzzslytzzzzpmzzzzzzgtzzzzzzfnzzzzzzqozzvzzzoyzzzzzzyqzvzyusaqzrxutzdazhlprzr2pjngani7kbe7badddjlc777",
+     "live": 8,
+     "phase": 0.492,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.53,
+     "running": true,
+     "target": 0.58,
+     "touching": 2,
+     "tpm": 9347
+    }
+   },
+   "t": 1795546771303
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 1,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "0121221032239b63xe878333rzz8bg53oztbch33uzvdbc43iznh89b2mzjkbpc4zzpmdhvz9sm7bpzv6xgfezz95jl8ezz66nz99zz58lzk5zz807lo69zf007deap0",
+     "live": 7,
+     "phase": 0.475,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.418,
+     "running": true,
+     "target": 0.29000000000000004,
+     "touching": 3,
+     "tpm": 6142
+    },
+    "cosi": {
+     "activity": 0.25,
+     "crowd": "5cpjqkfb6qzrvozcetzzzzzwizzzszzmgzzzzzztjzzzzzzytzzzzzzvpzzzzzzopzzzzzzkzzwzzzzmozxzzzz9kzpzzzziazkmzyzn5zqfoew83gm7965669ha6333",
+     "live": 8,
+     "phase": 0.544,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.582,
+     "running": true,
+     "target": 0.71,
+     "touching": 2,
+     "tpm": 11663
+    }
+   },
+   "t": 1795546781303
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0.3,
+    "share": true,
+    "shareK": 0.75
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "298885105kc8dihegf4gi8a9dzmcbcg5czhdej66ezsev6c69zhnlbi1bzjvsin2hzqtqith5upebizf3qlfhzz42jofazz33kz8ezv2covxlup4ngac34i767c675c0",
+     "live": 7,
+     "phase": 0.29,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.29,
+     "running": true,
+     "target": 0.29000000000000004,
+     "touching": 3,
+     "tpm": 5961
+    },
+    "cosi": {
+     "activity": 0.25,
+     "crowd": "36iidfc53izrzsydnrzzzzzp8vzzzzzz8zzzzzzz9zzzzzzzwzzzzzzzxzzzzzzzvzzzzzzzzzzzzzzzmzzzzzzkazzzzzzp5zzzznzo2zzzjgz42ith4bu334rc3282",
+     "live": 8,
+     "phase": 0.71,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.71,
+     "running": true,
+     "target": 0.71,
+     "touching": 2,
+     "tpm": 12571
+    }
+   },
+   "t": 1795546791304
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0.3,
+    "share": false,
+    "shareK": 0.1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "844476a0beddfeobeh2788m46uf5hsm25sgonpp3fzvzsrq3dviznus0elzxqzj1hgzolzd8bewouvv79cfszzx25fbqszz1beodomq15gmoann2a75b9id533533694",
+     "live": 7,
+     "phase": 0.261,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.261,
+     "running": true,
+     "target": 0.20999999999999996,
+     "touching": 3,
+     "tpm": 6395
+    },
+    "cosi": {
+     "activity": 0.13,
+     "crowd": "1388ab5218gcsfl6acjnvssb4evzmzzh4myzzzzp4zzzzzzulzzzzzzzfzzzzzzzezzzzzzpiuzzzzzpaszzzzze4qzzzzze2lzzzzzg1gtzxlp418hzjbj112fwe681",
+     "live": 8,
+     "phase": 0.739,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.739,
+     "running": true,
+     "target": 0.79,
+     "touching": 1,
+     "tpm": 13977
+    }
+   },
+   "t": 1795546802311
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0.3,
+    "share": false,
+    "shareK": 0.1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.43,
+     "crowd": "7achvad05arzzzwe8tjd7gy2brh9mtsbijiqnvzhmzyzthzjkvbpfdz9mtxyzzzbnzznzpzdjkmhsjz8gmkfrzz78mrszzy75jljqlh3aclmhmf1bahlkhga11211342",
+     "live": 7,
+     "phase": 0.454,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.454,
+     "running": false,
+     "target": 1,
+     "touching": 3,
+     "tpm": 6195
+    },
+    "cosi": {
+     "activity": 0.25,
+     "crowd": "11bccda7acb6d7ac559becdf26islzsc2anzxzkb2nzzzzmeaszzzzzz7tzzzzzp6mzzzyzi8dzzzzzj5dzzztz62czzzwz619zzzrz707kzvns2048wgbm7117l6ac6",
+     "live": 8,
+     "phase": 0.546,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.546,
+     "running": false,
+     "target": 0,
+     "touching": 2,
+     "tpm": 12348
+    }
+   },
+   "t": 1795546813302
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0.3,
+    "share": false,
+    "shareK": 0.1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.57,
+     "crowd": "4568f56025dihhf74e967bh1cf87hee5ezhdifj8bzspu8v9azecg7x5aygmxnz5fzhnlgu69lkqnnk48baeixt34bddzzz329a9ozp256abjzi0558afh8511111121",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 4,
+     "tpm": 5595
+    },
+    "cosi": {
+     "activity": 0.25,
+     "crowd": "78cdcca99653635673aidcd7ccmlkij69jlqxzod3ynwzzhahzzzzywtbkzywptedezzvmw9f6zzznzec6vztjt86ctzrlm96axzoim4e6mskek107bmgcj3003f3563",
+     "live": 8,
+     "phase": 0,
+     "players": 8,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 2,
+     "tpm": 10967
+    }
+   },
+   "t": 1795546823307
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.3,
+    "share": true,
+    "shareK": 0.35
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.5,
+     "crowd": "223472305djnk8b38vlanyg05k8gdik6zzynwnpbdztgxvt47zu5jpx2fzzlqvp2izryiku3logmpsz2bgborzz1gzllpzz11mhkyzk16ihggzp0979b7g7200100110",
+     "live": 8,
+     "phase": 1,
+     "players": 8,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 4,
+     "tpm": 6080
+    },
+    "cosi": {
+     "activity": 0.14,
+     "crowd": "3366655443263123319e9b635cvnzif39mvzzzu66zzzzzz8ezzzzzzd5zzzzzz66zzzzzz47wzzzzw65mzzzzj43fzzzyf434vxztf263fgre90035ak58100175231",
+     "live": 7,
+     "phase": 0,
+     "players": 7,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 1,
+     "tpm": 11316
+    }
+   },
+   "t": 1795546834314
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.3,
+    "share": true,
+    "shareK": 0.75
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.5,
+     "crowd": "thijfje0ankzzvb24xznrzn5jwwmj9g3qzzxznj5yzzzzzh7zzztzzp6zzzzzxlczzzzzxuhzzzztzt7ziztzzp6spsahzu14hlhozq07dohizc0544ebfb600000000",
+     "live": 8,
+     "phase": 1,
+     "players": 8,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 4,
+     "tpm": 6975
+    },
+    "cosi": {
+     "activity": 0.14,
+     "crowd": "22333322211311112147553236ibm9714akksmf33hztzno47yzzzzzf2qzzzzz33nzzzzz23fzzzzz33kzzzzo2edzzzzl2eeszyzk1cfdqqpg0afc9f7b50b438113",
+     "live": 7,
+     "phase": 0,
+     "players": 7,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 1,
+     "tpm": 10286
+    }
+   },
+   "t": 1795546844322
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.65,
+    "share": true,
+    "shareK": 0.75
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.5,
+     "crowd": "ebfec9hhxzzzzzpbczzzzzzczxzuzzzozzwmnollzzqiwzuxzzztzviizzzzzgvozzxzrgzezzkzjzzcz9hnqzzfzcd58zz9g8a8czzde6c89zzosbafejvw400000cb",
+     "live": 8,
+     "phase": 1,
+     "players": 8,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 4,
+     "tpm": 8662
+    },
+    "cosi": {
+     "activity": 0.17,
+     "crowd": "ieejkkkobcaafoff17lojgb8dkufa4hpjmsllbpujtiouuzjrzxtzzzllszxzzz1evzzzzz1cszzxzv1aozqxzg1idxtrvf1iepupra0fg6ljj805764779205224011",
+     "live": 6,
+     "phase": 0,
+     "players": 6,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 1,
+     "tpm": 8465
+    }
+   },
+   "t": 1795546854323
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.65,
+    "share": true,
+    "shareK": 0.75
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.5,
+     "crowd": "iizutlnexllutwtkkzzzzzzqjznimmzvzzpllkrttzgbklwznzssysnokzzzqfztzzzzzhzzzzqzzzzdzzmkzzzezrzvzzzcm8hpzzzhgdcfhzzzceiid9hz20000055",
+     "live": 8,
+     "phase": 0.758,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.71,
+     "running": true,
+     "target": 0.71,
+     "touching": 4,
+     "tpm": 9821
+    },
+    "cosi": {
+     "activity": 0.14,
+     "crowd": "8769999b5654bh7703dhgo946ezwzzpbbszzvsyeezzzzzzkmzzzzzzqfzzzzzzqezzzzzzmezzzzzzibpqvzzu9feyyvmk8gnisywi8eheh8mhaaea9acc40egeb601",
+     "live": 7,
+     "phase": 0.273,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.29,
+     "running": true,
+     "target": 0.29,
+     "touching": 1,
+     "tpm": 8356
+    }
+   },
+   "t": 1795546865314
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.65,
+    "share": true,
+    "shareK": 0.75
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.38,
+     "crowd": "8kukd9a6mzaekkd9uzwqswtcfzzmhhweywzeijolmzxjszozizzzszzpfzzrpvzurzzozzzyzztzrzz6ulvgqzz6mzkwzzz6isdmzzz8dxjkszzpkyzzzwvjepqmrpg2",
+     "live": 8,
+     "phase": 0.539,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.49,
+     "running": true,
+     "target": 0.49,
+     "touching": 3,
+     "tpm": 10788
+    },
+    "cosi": {
+     "activity": 0.14,
+     "crowd": "4334becb23dejjdb0ccsvwog3lzzzzzs5zzzzzzzdzzzzzzuszzzzzzohzzzzzzhqzzzzzzamzzzzzzbjzzzzzp8flwzzvh9chkgzsj7b868ajad9754958246769300",
+     "live": 7,
+     "phase": 0.491,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.51,
+     "running": true,
+     "target": 0.51,
+     "touching": 1,
+     "tpm": 10841
+    }
+   },
+   "t": 1795546876307
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.65,
+    "share": true,
+    "shareK": 0.75
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.33,
+     "crowd": "4ficb993bo57aa9aezidegeb7tke88xbhgklgnqdbmrxzzum9ztzzzzi7zuzzyzkdzvzzzzlopqzzzz3fjldzzx3bpcozzz38ddlzzq46ggoextcahojkff97ccbdc81",
+     "live": 6,
+     "phase": 0.524,
+     "players": 6,
+     "poll": 0,
+     "progress": 0.49,
+     "running": true,
+     "target": 0.49,
+     "touching": 2,
+     "tpm": 10956
+    },
+    "cosi": {
+     "activity": 0.38,
+     "crowd": "2112576611cfkha506dhlgjb1hoxxqkk2yzzzzuo6zzzzzzpdzzzzzzc8zzzzzz8dzzzzzs5bzzzzzv59zzzzzp4ckzzzou7bgqwzoj75abhld764589834123434100",
+     "live": 8,
+     "phase": 0.475,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.51,
+     "running": true,
+     "target": 0.51,
+     "touching": 3,
+     "tpm": 14110
+    }
+   },
+   "t": 1795546886311
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.65,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.33,
+     "crowd": "279654415c2355557h9678753ea7adl588amtgd65apzvreb4nzzzzm93tzwzzsa6uuzzzwabckzzzu179a9zzz25c6chnr1466almc2388c7ge658c9a77436656641",
+     "live": 6,
+     "phase": 0.522,
+     "players": 6,
+     "poll": 0,
+     "progress": 0.49,
+     "running": true,
+     "target": 0.49,
+     "touching": 2,
+     "tpm": 10360
+    },
+    "cosi": {
+     "activity": 0.38,
+     "crowd": "166633336587fd5305gmiai61bnuzzxd1szzzzzh3zzzzzzn7zzzzzzj4zzzzzv96zzzzzpdgzzzzzscxzzzzzr2szzzzllbczzzsgha99fca69ab3c785a0116a9830",
+     "live": 8,
+     "phase": 0.473,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.51,
+     "running": true,
+     "target": 0.51,
+     "touching": 3,
+     "tpm": 15779
+    }
+   },
+   "t": 1795546896322
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.65,
+    "share": true,
+    "shareK": 1
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.2,
+     "crowd": "134332216b9222223kieb43327hiiea3445hwld325cljsk52bkjmvo92eklzzre3feqzwfh66jszzeb3ozzzzs17hpxzzva2ahinxh614clnjib2464544223333320",
+     "live": 5,
+     "phase": 0.33,
+     "players": 5,
+     "poll": 0,
+     "progress": 0.303,
+     "running": true,
+     "target": 0.30000000000000004,
+     "touching": 1,
+     "tpm": 9108
+    },
+    "cosi": {
+     "activity": 0.44,
+     "crowd": "033399413344kj84028lzntb0mzzzzzn1zzzzzzsdzzzzzzhezzzzzzebzzzzzz5lzzzzzybpzzzzzteszzzzzl9ezzzzzecbzzzzngd9dwzzmgd98eprbh0013j4420",
+     "live": 9,
+     "phase": 0.662,
+     "players": 9,
+     "poll": 0,
+     "progress": 0.697,
+     "running": true,
+     "target": 0.7,
+     "touching": 4,
+     "tpm": 18625
+    }
+   },
+   "t": 1795546906325
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.15,
+    "share": true,
+    "shareK": 0.55
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.2,
+     "crowd": "087111108beafb712aedbci7138997a12228gab2126a9ja365a9bkc487aaind7977ckk78a39ejm959bkimnj0accgllk579d9bgc719bab99b1797767116611110",
+     "live": 5,
+     "phase": 0.305,
+     "players": 5,
+     "poll": 0,
+     "progress": 0.3,
+     "running": true,
+     "target": 0.30000000000000004,
+     "touching": 1,
+     "tpm": 6274
+    },
+    "cosi": {
+     "activity": 0.44,
+     "crowd": "9lxml721bppzzzzajuzzzwyuozzzzzzzlzzzzzzzqzzzzzzvzzzzzzzszzzzzzzdzzzzzzzhzzzzzzzszzzzzzzczzzzzzmkhzzzzznjmzzzzzqfhyzzwom7067h2580",
+     "live": 9,
+     "phase": 0.69,
+     "players": 9,
+     "poll": 0,
+     "progress": 0.7,
+     "running": true,
+     "target": 0.7,
+     "touching": 4,
+     "tpm": 23799
+    }
+   },
+   "t": 1795546916332
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.15,
+    "share": true,
+    "shareK": 0.55
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.2,
+     "crowd": "0431100045757531f5765693ef444351at6485548t755951dqb45a62fne59b634fe6ga4451979b434699bb909668aaa2c46458639455544574qqslg603319np0",
+     "live": 5,
+     "phase": 0.285,
+     "players": 5,
+     "poll": 0,
+     "progress": 0.281,
+     "running": true,
+     "target": 0.21999999999999997,
+     "touching": 1,
+     "tpm": 4838
+    },
+    "cosi": {
+     "activity": 0.33,
+     "crowd": "4agba4108iivzzt89enzztoechzzzzzkazzzzzzxczzzzzzpkzzzzzzjlzzzzzzbozzzzzz8ozzzzzvelzzzzzz6hzzzzzha8zzzyup9bivzyuo7fmzzrkh403381240",
+     "live": 9,
+     "phase": 0.711,
+     "players": 9,
+     "poll": 0,
+     "progress": 0.719,
+     "running": true,
+     "target": 0.78,
+     "touching": 3,
+     "tpm": 23501
+    }
+   },
+   "t": 1795546926334
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.15,
+    "share": true,
+    "shareK": 0.55
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.17,
+     "crowd": "02443600239ffig072a3d9hb7d5d96b65l3da9b74l4eaac36j89m5b77id2q9b72ed6oba827bac5b1895455a0ea345571g9323432d8623223a2ndda8361204bc0",
+     "live": 6,
+     "phase": 0.224,
+     "players": 6,
+     "poll": 0,
+     "progress": 0.22,
+     "running": true,
+     "target": 0.21999999999999997,
+     "touching": 1,
+     "tpm": 3723
+    },
+    "cosi": {
+     "activity": 0.11,
+     "crowd": "25855200499fjle457blsecb68nsumljcuzzzzzqeszzzzjngzzzzznharzzzzlcbzzzzzrbczzzzzm7apyzzpj38qxsmj854jpihec459fkhfc47bhida8201240120",
+     "live": 9,
+     "phase": 0.777,
+     "players": 9,
+     "poll": 0,
+     "progress": 0.78,
+     "running": true,
+     "target": 0.78,
+     "touching": 1,
+     "tpm": 20218
+    }
+   },
+   "t": 1795546936339
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0.65,
+    "share": true,
+    "shareK": 0.55
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.2,
+     "crowd": "04861300174d78703756a4859926a353991b9453892c5451994ah753a86em753699gl5541afic2514aqj82506bgra2317ablkb716998fia151f6654131102560",
+     "live": 5,
+     "phase": 0.239,
+     "players": 5,
+     "poll": 0,
+     "progress": 0.22,
+     "running": true,
+     "target": 0.21999999999999997,
+     "touching": 1,
+     "tpm": 3284
+    },
+    "cosi": {
+     "activity": 0.22,
+     "crowd": "12322640246epjj623ejzzzf9arzzzzzcnzzzzztchzzzzzzcrzzzzzn7mzzzzraalzzzzjadzzzzge8oessqfb18coha94229el7652247f7752358e6441011c0110",
+     "live": 9,
+     "phase": 0.759,
+     "players": 9,
+     "poll": 0,
+     "progress": 0.78,
+     "running": true,
+     "target": 0.78,
+     "touching": 2,
+     "tpm": 18244
+    }
+   },
+   "t": 1795546947334
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 1,
+    "share": true,
+    "shareK": 0.55
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.4,
+     "crowd": "02431100032638c92323d93244cb518148g542b14d8622a18b9aj39144mcg321348fa22204cd512025k9412035ic411035599530344378512073322110001220",
+     "live": 5,
+     "phase": 0.266,
+     "players": 5,
+     "poll": 0,
+     "progress": 0.213,
+     "running": true,
+     "target": 0.07999999999999996,
+     "touching": 2,
+     "tpm": 2680
+    },
+    "cosi": {
+     "activity": 0.14,
+     "crowd": "012115971236eorb116bzzzc45crzzzm5akzzzzs57lzzzzu5cmzzzzl3aizzzt559oyzzc46hlrti64b7dgcd5145b84821146a3321123733211236322000060000",
+     "live": 7,
+     "phase": 0.766,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.787,
+     "running": true,
+     "target": 0.92,
+     "touching": 1,
+     "tpm": 14409
+    }
+   },
+   "t": 1795546958333
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 1,
+    "share": true,
+    "shareK": 0.55
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0,
+     "crowd": "0121010002131354111164212255214124722151264311504545914122a571611237416102562070129420641285201712244210122234201031111010000110",
+     "live": 5,
+     "phase": 0.191,
+     "players": 5,
+     "poll": 0,
+     "progress": 0.161,
+     "running": true,
+     "target": 0.07999999999999996,
+     "touching": 0,
+     "tpm": 1701
+    },
+    "cosi": {
+     "activity": 0.13,
+     "crowd": "0010024301136bc50135jpk5225clppa259koord23ahkmle25ansrn9148hurd22cpovg6238imo83253eim6202e93931008749110019cc1101167111000020000",
+     "live": 8,
+     "phase": 0.835,
+     "players": 8,
+     "poll": 0,
+     "progress": 0.839,
+     "running": true,
+     "target": 0.92,
+     "touching": 1,
+     "tpm": 9139
+    }
+   },
+   "t": 1795546969327
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": true,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 0.55
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0,
+     "crowd": "00110000010112220101321011221020123110201321002022224120114231301123203001231030014210321142100311122110111112100011100000000010",
+     "live": 4,
+     "phase": 0.109,
+     "players": 4,
+     "poll": 0,
+     "progress": 0.109,
+     "running": true,
+     "target": 0,
+     "touching": 0,
+     "tpm": 1604
+    },
+    "cosi": {
+     "activity": 0.14,
+     "crowd": "000001210011355200129b9211269bb41249bbc612489aa6124bdcb41248ec6116bbe731138ab4112168a31016424200033247zj00455zz000231zf000010600",
+     "live": 7,
+     "phase": 0.891,
+     "players": 7,
+     "poll": 0,
+     "progress": 0.891,
+     "running": true,
+     "target": 1,
+     "touching": 1,
+     "tpm": 4927
+    }
+   },
+   "t": 1795546980325
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": true,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.25,
+     "crowd": "00000000000h01110066lb0000fmsha00186wud00914hwn016586nn800868hj00636j0e0001ej01000250011084178010066c960000055000010000000000000",
+     "live": 4,
+     "phase": 0.06,
+     "players": 4,
+     "poll": 0,
+     "progress": 0.06,
+     "running": true,
+     "target": 0,
+     "touching": 1,
+     "tpm": 1287
+    },
+    "cosi": {
+     "activity": 0,
+     "crowd": "000000110001123100114541001355521124556311244553112566520124763003557310124552101134510003212100021124zd00233zz000110z7000010300",
+     "live": 6,
+     "phase": 0.94,
+     "players": 6,
+     "poll": 0,
+     "progress": 0.94,
+     "running": true,
+     "target": 1,
+     "touching": 0,
+     "tpm": 3842
+    }
+   },
+   "t": 1795546990341
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.25,
+     "crowd": "00000000000800a00033a5a7007hd8e5004geeb0040e8fe003233bb4006dd880ec8gp0f406169010001200100446a9310035b4949500777237fc424000002400",
+     "live": 4,
+     "phase": 0.006,
+     "players": 4,
+     "poll": 0,
+     "progress": 0.006,
+     "running": true,
+     "target": 0,
+     "touching": 1,
+     "tpm": 1164
+    },
+    "cosi": {
+     "activity": 0,
+     "crowd": "000000000000111000002221001122210012223100122221011233210012331001223210012221000012210001101000011012m600111ju000110l3000000100",
+     "live": 6,
+     "phase": 0.994,
+     "players": 6,
+     "poll": 0,
+     "progress": 0.994,
+     "running": true,
+     "target": 1,
+     "touching": 0,
+     "tpm": 2583
+    }
+   },
+   "t": 1795547001321
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.25,
+     "crowd": "000000000003004000114243003f6462002fj6a0fh36hah0059267c200366370vj7jm3e8030a9040450620947l8ab45ad612d242420033311375212000001200",
+     "live": 4,
+     "phase": 0,
+     "players": 4,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 1,
+     "tpm": 1246
+    },
+    "cosi": {
+     "activity": 0.29,
+     "crowd": "00000000000000100000doq00001eij80005llj80007wlb10007zlc0004zzq6001azpk0000dpk800001110000100000000000an300011un000000a1000000100",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 2,
+     "tpm": 2351
+    }
+   },
+   "t": 1795547012316
+  },
+  {
+   "fb": {
+    "idle": false,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.4,
+     "crowd": "000000000002002008818121075la231e81dl953ht5dneid094734m10b7h3230fifzg6jg059lk020226dba927a4ibbbd6316d12a210261201233101000000100",
+     "live": 5,
+     "phase": 0,
+     "players": 5,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 2,
+     "tpm": 1415
+    },
+    "cosi": {
+     "activity": 0.29,
+     "crowd": "000000000000000000006po00000doo60003opo4009zzz9000zzzzf000zzzzi07bzzyzd0h0zzzz40f0izx000f0000000e00005b1g5000eb03300051000000000",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 2,
+     "tpm": 3443
+    }
+   },
+   "t": 1795547022321
+  },
+  {
+   "fb": {
+    "idle": true,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.4,
+     "crowd": "000000000cgg80100j90dd510a8a56b1d95baab1ge2db7n67428f2n0753h81e4f97l8aff725aa767878chje7ad7ja5d68773a08548b9a8100121000000000000",
+     "live": 5,
+     "phase": 0,
+     "players": 5,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 2,
+     "tpm": 1696
+    },
+    "cosi": {
+     "activity": 0.38,
+     "crowd": "4000420090048c0040673lj020a06cn307b1fgj60blzzzd70cztzzl70oyzzzl73wzzgzn88nzlwzn07byzzn847gbhpe447bdc3251860057501500020900000000",
+     "live": 8,
+     "phase": 1,
+     "players": 8,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 3,
+     "tpm": 3945
+    }
+   },
+   "t": 1795547032333
+  },
+  {
+   "fb": {
+    "idle": true,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.4,
+     "crowd": "3767673095dfcagd6f75a64l697a235f9h67a49r7l7653pna9a775a5366ge3c2fg3vkhd7342n43e3478fa9gb8ga9e26ia8b1b04f29jab4090046a77400000000",
+     "live": 5,
+     "phase": 0,
+     "players": 5,
+     "poll": 0,
+     "progress": 0,
+     "running": true,
+     "target": 0,
+     "touching": 2,
+     "tpm": 2212
+    },
+    "cosi": {
+     "activity": 0.5,
+     "crowd": "b605gife4bbnkzzi6qzmzzztdkzmzwzyewyzzzzzhuzzzztt5qzzzzwsaszzzzzidwzzzzzhglzzzzzqhfzxzzznotzutzzegruznzqbcqezkdzcamzi9ap400000430",
+     "live": 8,
+     "phase": 1,
+     "players": 8,
+     "poll": 0,
+     "progress": 1,
+     "running": true,
+     "target": 1,
+     "touching": 4,
+     "tpm": 5403
+    }
+   },
+   "t": 1795547043318
+  },
+  {
+   "fb": {
+    "idle": true,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.4,
+     "crowd": "243434bg436768e63743562a343553274836a24haf3722ch5453335688387163dj2fa8b6129d429123ah54d58d9i718b5469e02d1495b2080023a34200000000",
+     "live": 5,
+     "phase": 0,
+     "players": 5,
+     "poll": 0,
+     "progress": 0,
+     "running": false,
+     "target": 0,
+     "touching": 2,
+     "tpm": 1862
+    },
+    "cosi": {
+     "activity": 0.38,
+     "crowd": "5gspvuzzhleifozjcuuowzzkentitvzo7nwzzzyodlzzzzpl2mzzzzon5lzzzzzc6lzzxzz88rzzzzzz8rzzzzzbbzzwzzzi8nszzzs56hszzuz65iuskrl2066n0g50",
+     "live": 8,
+     "phase": 1,
+     "players": 8,
+     "poll": 0,
+     "progress": 1,
+     "running": false,
+     "target": 1,
+     "touching": 3,
+     "tpm": 7239
+    }
+   },
+   "t": 1795547053327
+  },
+  {
+   "fb": {
+    "idle": true,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0.2,
+     "crowd": "5978725dg1haadgb93466875c2226414ab135628c723166882222623c41fb332h91c9453d1466341i2582762j64bc485b234e0560242b5544667g79100000000",
+     "live": 5,
+     "phase": 0,
+     "players": 5,
+     "poll": 0,
+     "progress": 0,
+     "running": false,
+     "target": 0,
+     "touching": 1,
+     "tpm": 1935
+    },
+    "cosi": {
+     "activity": 0,
+     "crowd": "38ecjjpl8cbd7bi96jebfioa9de9efnc3bghhhgboakoqoca6jntyucb2jtsjqi63avzgwi44dtyvshi4dnqlkk56hnfkll94bdimid238dmlei329feada1033b0830",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": false,
+     "target": 1,
+     "touching": 0,
+     "tpm": 7362
+    }
+   },
+   "t": 1795547063329
+  },
+  {
+   "fb": {
+    "idle": true,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0,
+     "crowd": "1111101220211222111111112000h50112001b41210001n110000880210287002102f11020111010301101103112211120012011001021111111211000000000",
+     "live": 5,
+     "phase": 0,
+     "players": 5,
+     "poll": 0,
+     "progress": 0,
+     "running": false,
+     "target": 0,
+     "touching": 0,
+     "tpm": 1265
+    },
+    "cosi": {
+     "activity": 0,
+     "crowd": "01223343122212311322234112212232022333223234432213345422034434310155253112455423123433311332333112233320012332300122121000020100",
+     "live": 7,
+     "phase": 1,
+     "players": 7,
+     "poll": 0,
+     "progress": 1,
+     "running": false,
+     "target": 1,
+     "touching": 0,
+     "tpm": 4388
+    }
+   },
+   "t": 1795547089754
+  },
+  {
+   "fb": {
+    "idle": true,
+    "nudge": false,
+    "nudgeK": 0,
+    "share": false,
+    "shareK": 0
+   },
+   "roles": {
+    "cimsi": {
+     "activity": 0,
+     "crowd": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+     "live": 4,
+     "phase": 0,
+     "players": 4,
+     "poll": 0,
+     "progress": 0,
+     "running": false,
+     "target": 0,
+     "touching": 0,
+     "tpm": 0
+    },
+    "cosi": {
+     "activity": 0,
+     "crowd": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+     "live": 6,
+     "phase": 1,
+     "players": 6,
+     "poll": 0,
+     "progress": 1,
+     "running": false,
+     "target": 1,
+     "touching": 0,
+     "tpm": 0
+    }
+   },
+   "t": 1795547222343
+  }
+ ]
+}
