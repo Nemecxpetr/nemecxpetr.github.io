@@ -43,6 +43,15 @@
     "log": {
       ".read": "auth != null && auth.uid === 'XK85kNrN8lPOq8jN8UzgEuMkJVt1'",
       ".write": "auth != null && auth.uid === 'XK85kNrN8lPOq8jN8UzgEuMkJVt1'"
+    },
+    "releases": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'XK85kNrN8lPOq8jN8UzgEuMkJVt1'",
+      "$id": {
+        ".validate": "newData.hasChildren(['date', 'title']) && $id.length <= 40",
+        "date": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)" },
+        "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 300" }
+      }
     }
   }
 }

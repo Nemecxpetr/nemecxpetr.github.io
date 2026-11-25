@@ -1,11 +1,13 @@
 /**
  * Releases module
- * - Loads `assets/releases.json`
+ * - Loads `assets/releases.json` + entries added on admin/releases.html (see releases-source.js)
  * - Renders "upcoming", "latest", and "all releases" blocks depending on page
  * - Computes a consistent side-column width based on longest link word
  */
 
-const DEFAULT_RELEASES_URL = "assets/releases.json";
+import { fetchAllReleases, STATIC_RELEASES_URL } from "./releases-source.js";
+
+const DEFAULT_RELEASES_URL = STATIC_RELEASES_URL;
 const RELEASE_FOCUS_CLASS = "release-focus-flash";
 const RELEASE_FOCUS_DURATION_MS = 1200;
 const RELEASE_MODE_PAST = "past";
@@ -1108,10 +1110,7 @@ async function loadReleases({
   let focusSearchRoot = allReleasesEl || modeStageEl || fullPastReleasesEl || fullUpcomingReleasesEl;
 
   try {
-    const resp = await fetch(releasesUrl, { cache: "no-store" });
-    const text = resp.ok ? await resp.text() : "";
-    const cleaned = text.replace(/^\uFEFF/, "");
-    const items = cleaned ? JSON.parse(cleaned) : [];
+    const items = await fetchAllReleases(releasesUrl);
 
     if (!Array.isArray(items)) {
       return;
@@ -1120,7 +1119,7 @@ async function loadReleases({
     const indexed = items.map((item, index) => ({
       ...item,
       _index: index,
-      releaseKey: String(index)
+      releaseKey: item.releaseKey || String(index)
     }));
     indexed.sort((a, b) => {
       const diff = toDateValue(b.date) - toDateValue(a.date);

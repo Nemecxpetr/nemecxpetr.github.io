@@ -163,3 +163,9 @@ Adding `?local` to both URLs forces local mode even after Firebase is configured
 After that, only your Google account can change anything. Players can only read, plus register
 themselves in the player count and write their own anonymous touch summary (size-checked).
 **Whenever `database.rules.json` changes, paste it into the console again → Publish.**
+
+The same project also holds `releases/`: entries added from the hidden page `/admin/releases.html`
+(public read, admin write). The site merges them with `assets/releases.json`
+(`js/releases-source.js`). The admin page's **merge** button commits them into the file on GitHub
+(`js/releases-merge.js`, needs a fine-grained GitHub token saved in that browser) and removes them
+from the database once the deploy is live.

@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>releases admin</title>
+  <link rel="icon" type="image/png" href="../favicon_1.png" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --fg: #0b0b0b;
+      --muted: rgba(0, 0, 0, 0.6);
+      --hairline: rgba(0, 0, 0, 0.16);
+      --card: rgba(0, 0, 0, 0.035);
+      --accent: #174f83;
+      --danger: #b3261e;
+      --ok: #2e7d32;
+      --font: "Courier New", Courier, ui-monospace, Menlo, Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b0b0b;
+        --fg: #ffffff;
+        --muted: rgba(255, 255, 255, 0.66);
+        --hairline: rgba(255, 255, 255, 0.18);
+        --card: rgba(255, 255, 255, 0.05);
+        --accent: #83d6ff;
+        --danger: #ff8a80;
+        --ok: #8bd48f;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--fg); }
+    body {
+      font: 16px/1.4 var(--font);
+      padding: 16px 16px calc(96px + env(safe-area-inset-bottom));
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 20px; margin: 0; }
+    h2 { font-size: 16px; margin: 28px 0 8px; text-transform: lowercase; color: var(--muted); font-weight: normal; }
+    a { color: var(--accent); }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .who { font-size: 13px; color: var(--muted); word-break: break-all; }
+    button {
+      font: inherit; color: inherit; background: var(--card);
+      border: 1px solid var(--hairline); border-radius: 2px;
+      padding: 10px 14px; min-height: 44px; cursor: pointer;
+    }
+    button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+    button.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+    button.small { min-height: 36px; padding: 6px 10px; font-size: 14px; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .status { margin: 12px 0; padding: 10px 12px; border: 1px solid var(--hairline); font-size: 14px; display: none; }
+    .status.show { display: block; }
+    .status.err { border-color: var(--danger); color: var(--danger); }
+    .status.ok { border-color: var(--ok); color: var(--ok); }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+    /* list */
+    .list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline); }
+    .list li { border-bottom: 1px solid var(--hairline); padding: 10px 0; display: flex; gap: 10px; align-items: flex-start; }
+    .list .meta { flex: 1; min-width: 0; }
+    .list .date { font-size: 13px; color: var(--muted); }
+    .list .title { font-weight: bold; overflow-wrap: anywhere; }
+    .list .sub { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+    .list .actions { display: flex; flex-direction: column; gap: 6px; }
+    .tag { font-size: 11px; border: 1px solid var(--hairline); padding: 1px 5px; margin-left: 6px; vertical-align: 2px; }
+    .tag.up { border-color: var(--accent); color: var(--accent); }
+    .empty { color: var(--muted); font-size: 14px; padding: 10px 0; }
+    details.repo summary { cursor: pointer; color: var(--muted); padding: 8px 0; }
+    details.settings { margin-top: 14px; border: 1px solid var(--hairline); padding: 0 12px; }
+    details.settings summary { cursor: pointer; color: var(--muted); padding: 10px 0; font-size: 14px; }
+    details.settings[open] { padding-bottom: 12px; }
+    details.settings input { display: block; width: 100%; font: inherit; font-size: 16px; color: var(--fg); background: var(--card); border: 1px solid var(--hairline); padding: 10px; }
+    .tag.merging { border-color: var(--ok); color: var(--ok); }
+
+    /* form */
+    dialog {
+      width: 100%; max-width: 760px; max-height: 100dvh; height: 100dvh; margin: 0 auto; padding: 0;
+      border: 0; background: var(--bg); color: var(--fg);
+    }
+    @media (min-width: 800px) { dialog { height: auto; max-height: 92dvh; margin-top: 4dvh; border: 1px solid var(--hairline); } }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+    form { padding: 16px 16px calc(100px + env(safe-area-inset-bottom)); }
+    .form-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+    label { display: block; margin-top: 14px; font-size: 13px; color: var(--muted); }
+    label.req::after { content: " *"; color: var(--danger); }
+    input[type="text"], input[type="url"], input[type="date"], textarea, select {
+      display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 16px; color: var(--fg);
+      background: var(--card); border: 1px solid var(--hairline); border-radius: 2px; padding: 10px;
+    }
+    textarea { min-height: 84px; resize: vertical; }
+    textarea.code { font-size: 13px; min-height: 70px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row > div { min-width: 0; }
+    .row label { margin-top: 14px; }
+    .check { display: flex; align-items: center; gap: 10px; margin-top: 16px; color: var(--fg); font-size: 15px; }
+    .check input { width: 22px; height: 22px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .chip {
+      font-size: 14px; padding: 6px 10px; min-height: 36px; border: 1px solid var(--hairline);
+      background: transparent; border-radius: 18px;
+    }
+    .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+    fieldset { border: 1px solid var(--hairline); margin: 18px 0 0; padding: 4px 12px 12px; }
+    legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
+    .link-row { border-top: 1px dashed var(--hairline); margin-top: 12px; padding-top: 2px; }
+    .link-row:first-of-type { border-top: 0; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .savebar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 2;
+      display: flex; gap: 8px; justify-content: center;
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      background: var(--bg); border-top: 1px solid var(--hairline);
+    }
+    dialog .savebar { position: sticky; margin: 24px -16px 0; }
+    .savebar button { flex: 1; max-width: 240px; }
+    .hidden { display: none !important; }
+    @media (max-width: 420px) { .row { grid-template-columns: 1fr; gap: 0; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>releases admin</h1>
+    <div id="auth-box"></div>
+  </header>
+  <div id="status" class="status" role="status"></div>
+
+  <main id="main" class="hidden">
+    <div class="toolbar">
+      <button id="btn-new" class="primary" type="button">+ new release</button>
+      <a href="../releases.html" target="_blank" rel="noopener"><button type="button">view site</button></a>
+      <button id="btn-merge" type="button">merge into releases.json</button>
+    </div>
+
+    <details id="gh-settings" class="settings">
+      <summary>GitHub token (needed for merging)</summary>
+      <p class="hint">
+        Make a fine-grained token at
+        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>:
+        repository access <b>only pjotrgerman.github.io</b>, permission <b>Contents: Read and write</b>.
+        It is saved only in this browser (do it once per phone / computer).
+      </p>
+      <input type="password" id="gh-token" autocomplete="off" spellcheck="false" placeholder="github_pat_…" />
+      <div class="toolbar">
+        <button type="button" class="small" id="gh-save">save</button>
+        <button type="button" class="small" id="gh-test">test</button>
+        <button type="button" class="small danger" id="gh-forget">forget</button>
+      </div>
+    </details>
+
+    <h2>added here (database)</h2>
+    <ul id="remote-list" class="list"></ul>
+
+    <details class="repo">
+      <summary>in the repo (assets/releases.json): read only, use as template</summary>
+      <ul id="static-list" class="list"></ul>
+    </details>
+  </main>
+
+  <dialog id="dlg">
+    <form id="form" autocomplete="off" novalidate>
+      <div class="form-head">
+        <h1 id="form-title">new release</h1>
+        <button type="button" class="small" data-close>close</button>
+      </div>
+
+      <div class="row">
+        <div><label class="req" for="f-date">date</label><input type="date" id="f-date" required /></div>
+        <div><label for="f-dateEnd">end date</label><input type="date" id="f-dateEnd" /></div>
+      </div>
+
+      <label class="req" for="f-title">title</label>
+      <input type="text" id="f-title" required />
+
+      <label for="f-event">event / festival</label>
+      <input type="text" id="f-event" list="dl-event" />
+
+      <div class="row">
+        <div><label for="f-type">type</label><input type="text" id="f-type" list="dl-type" /></div>
+        <div><label for="f-format">format</label><input type="text" id="f-format" list="dl-format" /></div>
+      </div>
+
+      <label>roles</label>
+      <div id="roles" class="chips"></div>
+      <input type="text" id="f-role-extra" placeholder="other roles, comma separated" />
+
+      <label for="f-venue">venue</label>
+      <input type="text" id="f-venue" list="dl-venue" />
+      <div class="row">
+        <div><label for="f-city">city</label><input type="text" id="f-city" list="dl-city" /></div>
+        <div><label for="f-country">country</label><input type="text" id="f-country" list="dl-country" /></div>
+      </div>
+
+      <label for="f-collaborators">collaborators</label>
+      <input type="text" id="f-collaborators" placeholder="comma separated" />
+
+      <label for="f-abstract">abstract</label>
+      <textarea id="f-abstract"></textarea>
+
+      <label for="f-context">context</label>
+      <input type="text" id="f-context" placeholder="e.g. Student works concert." />
+
+      <fieldset>
+        <legend>links</legend>
+        <div id="links"></div>
+        <button type="button" class="small" id="btn-add-link" style="margin-top:12px">+ link</button>
+        <div class="hint">The first link is the main one (the big button). Platform is guessed from the URL.</div>
+      </fieldset>
+
+      <label class="check"><input type="checkbox" id="f-cv" /> show on CV</label>
+      <label for="f-cvAuthorRole">CV author role</label>
+      <input type="text" id="f-cvAuthorRole" placeholder="optional, e.g. performer" />
+
+      <label class="check"><input type="checkbox" id="f-hidden" /> hidden (draft, not shown on the site)</label>
+
+      <label for="f-extra">extra fields (JSON object, e.g. embed)</label>
+      <textarea id="f-extra" class="code" spellcheck="false" placeholder='{ "embed": { "type": "soundcloud", "src": "..." } }'></textarea>
+
+      <div class="savebar">
+        <button type="button" data-close>cancel</button>
+        <button type="submit" class="primary" id="btn-save">save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <datalist id="dl-event"></datalist>
+  <datalist id="dl-type"></datalist>
+  <datalist id="dl-format"></datalist>
+  <datalist id="dl-venue"></datalist>
+  <datalist id="dl-city"></datalist>
+  <datalist id="dl-country"></datalist>
+  <datalist id="dl-link-label"><option value="Event"></option><option value="Listen"></option><option value="Video"></option><option value="Documentation"></option><option value="Portfolio"></option><option value="Recording"></option><option value="Buy"></option><option value="Map"></option><option value="Festival web"></option></datalist>
+
+  <script type="module">
+    import { FIREBASE_CONFIG, ADMIN_UID } from "../js/firebase-config.js";
+    import { fetchStaticReleases, normalizeRemoteRelease, REMOTE_RELEASES_PATH } from "../js/releases-source.js";
+    import { mergeIntoReleasesText, firebaseIdsInText } from "../js/releases-merge.js";
+
+    const GH = { owner: "Nemecxpetr", repo: "pjotrgerman.github.io", branch: "main", path: "assets/releases.json" };
+    const TOKEN_KEY = "releasesAdmin.githubToken";
+
+    const SDK = "10.12.2";
+    const KNOWN_ROLES = [
+      "composer", "sound-artist", "live-electronics", "performer", "improviser", "sound-designer",
+      "installation-artist", "video-artist", "collaborator", "initiator", "interpreter", "release-artist",
+      "lecturer", "researcher", "maker", "conceptual-artist"
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const statusEl = $("status");
+    let statusTimer = null;
+    function setStatus(text, kind = "", sticky = false, link = null) {
+      clearTimeout(statusTimer);
+      statusEl.textContent = text;
+      if (link) {
+        const a = document.createElement("a");
+        a.href = link.href;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.textContent = link.text;
+        statusEl.append(" ", a);
+      }
+      statusEl.className = `status show ${kind}`;
+      if (!sticky) statusTimer = setTimeout(() => { statusEl.className = "status"; }, 4000);
+    }
+
+    // ---------------------------------------------------------------- firebase
+    let app, db, auth, dbApi, authApi;
+    try {
+      const [appMod, dbMod, authMod] = await Promise.all([
+        import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-app.js`),
+        import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-database.js`),
+        import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-auth.js`)
+      ]);
+      app = appMod.initializeApp(FIREBASE_CONFIG);
+      db = dbMod.getDatabase(app);
+      auth = authMod.getAuth(app);
+      dbApi = dbMod;
+      authApi = authMod;
+    } catch (error) {
+      setStatus(`Could not load Firebase: ${error.message}`, "err", true);
+      throw error;
+    }
+
+    const releasesRef = () => dbApi.ref(db, REMOTE_RELEASES_PATH);
+    let remote = [];       // normalized, with _remoteId
+    let remoteRaw = {};    // as stored
+    let staticItems = [];
+    let unsubscribe = null;
+    let merging = false;   // a merge commit is in progress
+
+    function renderAuth(user) {
+      const box = $("auth-box");
+      box.innerHTML = "";
+      if (!user) {
+        const b = document.createElement("button");
+        b.className = "primary";
+        b.textContent = "sign in with Google";
+        b.onclick = signIn; // called straight from the tap so the popup isn't blocked
+        box.append(b);
+        return;
+      }
+      const who = document.createElement("span");
+      who.className = "who";
+      who.textContent = user.email || user.displayName || user.uid;
+      const out = document.createElement("button");
+      out.className = "small";
+      out.textContent = "sign out";
+      out.onclick = () => authApi.signOut(auth);
+      box.append(who, " ", out);
+    }
+
+    async function signIn() {
+      try {
+        await authApi.signInWithPopup(auth, new authApi.GoogleAuthProvider());
+      } catch (error) {
+        if (error.code === "auth/popup-blocked") setStatus("The popup was blocked. Allow popups for this site and tap again.", "err", true);
+        else if (error.code !== "auth/popup-closed-by-user" && error.code !== "auth/cancelled-popup-request") setStatus(`Sign-in failed: ${error.code || error.message}`, "err", true);
+      }
+    }
+
+    authApi.onAuthStateChanged(auth, (user) => {
+      renderAuth(user);
+      if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+      if (!user) {
+        $("main").classList.add("hidden");
+        return;
+      }
+      if (user.uid !== ADMIN_UID) {
+        $("main").classList.add("hidden");
+        setStatus(`This account can't edit releases (uid ${user.uid}). Sign in with the admin account.`, "err", true);
+        return;
+      }
+      statusEl.className = "status";
+      $("main").classList.remove("hidden");
+      unsubscribe = dbApi.onValue(releasesRef(), (snap) => {
+        remoteRaw = snap.val() || {};
+        remote = Object.entries(remoteRaw).map(([id, raw]) => normalizeRemoteRelease(id, raw)).filter(Boolean);
+        renderLists();
+        if (mergingIds().length) startPrunePoll();
+      }, (error) => setStatus(`Reading the database failed: ${error.message}. Are the rules published?`, "err", true));
+    });
+
+    // ------------------------------------------------------------------ lists
+    const todayIso = () => new Date().toISOString().slice(0, 10);
+    const byDateDesc = (a, b) => String(b.date || "").localeCompare(String(a.date || ""));
+
+    function itemHtml(item, actions) {
+      const upcoming = (item.dateEnd || item.date || "") >= todayIso();
+      const place = [item.venue, item.city].filter(Boolean).join(", ");
+      const sub = [item.event && item.event !== item.title ? item.event : "", place].filter(Boolean).join(" · ");
+      return `
+        <div class="meta">
+          <div class="date">${esc(item.date)}${item.dateEnd ? ` → ${esc(item.dateEnd)}` : ""}${upcoming ? '<span class="tag up">upcoming</span>' : ""}${item.hidden ? '<span class="tag">hidden</span>' : ""}${item.cv ? '<span class="tag">cv</span>' : ""}${item._remoteId && isMerging(item._remoteId) ? '<span class="tag merging">merged, deploying…</span>' : ""}</div>
+          <div class="title">${esc(item.title)}</div>
+          ${sub ? `<div class="sub">${esc(sub)}</div>` : ""}
+        </div>
+        <div class="actions">${actions}</div>`;
+    }
+
+    function renderLists() {
+      const rl = $("remote-list");
+      const sorted = [...remote].sort(byDateDesc);
+      rl.innerHTML = sorted.length
+        ? sorted.map((item) => `<li>${itemHtml(item, isMerging(item._remoteId) ? "" : `
+            <button class="small" data-edit="${esc(item._remoteId)}">edit</button>
+            <button class="small danger" data-del="${esc(item._remoteId)}">delete</button>`)}</li>`).join("")
+        : '<li class="empty">Nothing yet. Tap “+ new release”.</li>';
+
+      const n = mergeCandidates().length;
+      const mb = $("btn-merge");
+      mb.textContent = n ? `merge ${n} into releases.json` : "merge into releases.json";
+      mb.disabled = !n || merging;
+
+      const sl = $("static-list");
+      sl.innerHTML = staticItems
+        .map((item, i) => ({ item, i }))
+        .sort((a, b) => byDateDesc(a.item, b.item))
+        .map(({ item, i }) => `<li>${itemHtml(item, `<button class="small" data-copy="${i}">copy</button>`)}</li>`)
+        .join("");
+    }
+
+    document.addEventListener("click", async (event) => {
+      const t = event.target.closest("button");
+      if (!t) return;
+      if (t.dataset.edit) {
+        const item = remote.find((r) => r._remoteId === t.dataset.edit);
+        if (item) openForm(item, t.dataset.edit);
+      } else if (t.dataset.copy) {
+        const src = staticItems[Number(t.dataset.copy)];
+        if (src) openForm({ ...src, date: "", dateEnd: null }, null);
+      } else if (t.dataset.del) {
+        const item = remote.find((r) => r._remoteId === t.dataset.del);
+        if (!item || !confirm(`Delete “${item.title}” (${item.date})?`)) return;
+        try {
+          await dbApi.remove(dbApi.ref(db, `${REMOTE_RELEASES_PATH}/${t.dataset.del}`));
+          setStatus("Deleted.", "ok");
+        } catch (error) {
+          setStatus(`Delete failed: ${error.message}`, "err", true);
+        }
+      }
+    });
+
+    // ------------------------------------------------------------------- form
+    const dlg = $("dlg");
+    const form = $("form");
+    let editingId = null;
+    let selectedRoles = new Set();
+
+    const FIELDS = ["date", "dateEnd", "title", "event", "type", "format", "venue", "city", "country", "abstract", "context", "cvAuthorRole"];
+    const FORM_KEYS = new Set([...FIELDS, "artistRoles", "collaborators", "links", "cv", "hidden",
+      "releaseKey", "_remoteId", "_index", "_meta", "firebaseId"]);
+
+    function renderRoles(extraRoles = []) {
+      const roles = [...new Set([...KNOWN_ROLES, ...extraRoles])];
+      $("roles").innerHTML = roles.map((r) =>
+        `<button type="button" class="chip" data-role="${esc(r)}" aria-pressed="${selectedRoles.has(r)}">${esc(r)}</button>`).join("");
+    }
+    $("roles").addEventListener("click", (event) => {
+      const chip = event.target.closest("[data-role]");
+      if (!chip) return;
+      const r = chip.dataset.role;
+      if (selectedRoles.has(r)) selectedRoles.delete(r); else selectedRoles.add(r);
+      chip.setAttribute("aria-pressed", String(selectedRoles.has(r)));
+    });
+
+    function guessPlatform(url) {
+      const u = String(url || "").toLowerCase();
+      if (!u) return "";
+      if (u.startsWith("index.html") || u.startsWith("#") || u.includes("pjotrgerman.xyz")) return "portfolio";
+      const map = [
+        ["facebook", /(^|\/\/|\.)(fb\.me|fb\.com|facebook\.com)/], ["instagram", /instagram\.com/],
+        ["youtube", /youtu\.be|youtube\.com/], ["soundcloud", /soundcloud\.com/], ["bandcamp", /bandcamp\.com/],
+        ["tidal", /tidal\.com/], ["spotify", /spotify\.com/], ["vimeo", /vimeo\.com/]
+      ];
+      for (const [name, re] of map) if (re.test(u)) return name;
+      if (/mapy\.(cz|com)|maps\.google|goo\.gl\/maps/.test(u)) return "";
+      return "website";
+    }
+
+    function addLinkRow(link = {}) {
+      const row = document.createElement("div");
+      row.className = "link-row";
+      row.innerHTML = `
+        <div class="row">
+          <div><label>label</label><input type="text" data-k="label" list="dl-link-label" value="${esc(link.label || "")}" /></div>
+          <div><label>platform</label><input type="text" data-k="platform" value="${esc(link.platform || "")}" placeholder="auto" /></div>
+        </div>
+        <label>url</label><input type="url" data-k="url" inputmode="url" value="${esc(link.url || "")}" placeholder="https://" />
+        <div style="text-align:right;margin-top:6px"><button type="button" class="small danger" data-remove-link>remove</button></div>`;
+      row.querySelector("[data-remove-link]").onclick = () => row.remove();
+      const urlIn = row.querySelector('[data-k="url"]');
+      const platIn = row.querySelector('[data-k="platform"]');
+      const labelIn = row.querySelector('[data-k="label"]');
+      urlIn.addEventListener("change", () => {
+        if (!platIn.dataset.touched) platIn.value = guessPlatform(urlIn.value);
+        if (!labelIn.value.trim() && urlIn.value.trim()) {
+          const p = guessPlatform(urlIn.value);
+          labelIn.value = p === "soundcloud" || p === "bandcamp" || p === "tidal" || p === "spotify" ? "Listen"
+            : p === "youtube" || p === "vimeo" ? "Video" : p === "portfolio" ? "Portfolio" : "Event";
+        }
+      });
+      platIn.addEventListener("input", () => { platIn.dataset.touched = "1"; });
+      if (link.platform) platIn.dataset.touched = "1";
+      $("links").append(row);
+    }
+    $("btn-add-link").onclick = () => addLinkRow();
+
+    function openForm(item, id) {
+      editingId = id;
+      form.reset();
+      $("form-title").textContent = id ? "edit release" : "new release";
+      const data = item || {};
+      for (const k of FIELDS) $(`f-${k}`).value = data[k] ?? "";
+      $("f-cv").checked = data.cv === true;
+      $("f-hidden").checked = data.hidden === true;
+      const roles = Array.isArray(data.artistRoles) ? data.artistRoles : [];
+      selectedRoles = new Set(roles);
+      renderRoles(roles);
+      $("f-role-extra").value = "";
+      $("f-collaborators").value = (Array.isArray(data.collaborators) ? data.collaborators : []).join(", ");
+      $("links").innerHTML = "";
+      const links = data.links || {};
+      const all = [links.primary, ...(Array.isArray(links.secondary) ? links.secondary : [])].filter((l) => l && l.url);
+      if (all.length) all.forEach(addLinkRow); else addLinkRow();
+      const extra = Object.fromEntries(Object.entries(data).filter(([k]) => !FORM_KEYS.has(k)));
+      $("f-extra").value = Object.keys(extra).length ? JSON.stringify(extra, null, 2) : "";
+      dlg.showModal();
+      dlg.scrollTop = 0;
+      if (!id) $("f-date").focus();
+    }
+
+    function splitList(value) {
+      return String(value || "").split(",").map((s) => s.trim()).filter(Boolean);
+    }
+
+    function collect() {
+      const v = (k) => $(`f-${k}`).value.trim();
+      const out = {};
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v("date"))) throw new Error("Date is required.");
+      if (!v("title")) throw new Error("Title is required.");
+      if (v("dateEnd") && v("dateEnd") < v("date")) throw new Error("End date is before the start date.");
+      for (const k of FIELDS) if (v(k)) out[k] = v(k);
+      const roles = [...selectedRoles, ...splitList($("f-role-extra").value)];
+      if (roles.length) out.artistRoles = [...new Set(roles)];
+      const collaborators = splitList($("f-collaborators").value);
+      if (collaborators.length) out.collaborators = collaborators;
+      const links = [...$("links").querySelectorAll(".link-row")].map((row) => {
+        const get = (k) => row.querySelector(`[data-k="${k}"]`).value.trim();
+        const url = get("url");
+        if (!url) return null;
+        const link = { label: get("label") || "Link", url };
+        const platform = get("platform") || guessPlatform(url);
+        if (platform) link.platform = platform;
+        return link;
+      }).filter(Boolean);
+      out.links = { primary: links[0] || null, secondary: links.slice(1) };
+      if ($("f-cv").checked) out.cv = true;
+      if ($("f-hidden").checked) out.hidden = true;
+      const extraText = $("f-extra").value.trim();
+      if (extraText) {
+        let extra;
+        try { extra = JSON.parse(extraText); } catch { throw new Error("Extra fields: not valid JSON."); }
+        if (!extra || typeof extra !== "object" || Array.isArray(extra)) throw new Error("Extra fields must be a JSON object.");
+        for (const [k, val] of Object.entries(extra)) if (!FORM_KEYS.has(k)) out[k] = val;
+      }
+      return out;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      let item;
+      try { item = collect(); } catch (error) { alert(error.message); return; }
+      const btn = $("btn-save");
+      btn.disabled = true;
+      try {
+        const now = dbApi.serverTimestamp();
+        if (editingId) {
+          const prevMeta = (remoteRaw[editingId] && remoteRaw[editingId]._meta) || {};
+          await dbApi.set(dbApi.ref(db, `${REMOTE_RELEASES_PATH}/${editingId}`), { ...item, _meta: { ...prevMeta, updatedAt: now } });
+        } else {
+          await dbApi.set(dbApi.push(releasesRef()), { ...item, _meta: { createdAt: now, updatedAt: now } });
+        }
+        dlg.close();
+        setStatus(item.hidden ? "Saved (hidden)." : "Saved. It's live on the site.", "ok");
+      } catch (error) {
+        setStatus(`Save failed: ${error.message}`, "err", true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    dlg.addEventListener("click", (event) => {
+      if (event.target.closest("[data-close]")) dlg.close();
+    });
+
+    // ------------------------------------------------------------------ merge
+    // 1. commit the non-hidden database entries into assets/releases.json on GitHub
+    //    (each gets "firebaseId", so the site skips the database copy once deployed)
+    // 2. mark them `_meta/mergedAt` (locked here, shown as "merged, deploying…")
+    // 3. when the deployed releases.json contains them, delete them from the database
+    function isMerging(id) {
+      return Boolean(remoteRaw[id] && remoteRaw[id]._meta && remoteRaw[id]._meta.mergedAt);
+    }
+    function mergingIds() {
+      return Object.keys(remoteRaw).filter(isMerging);
+    }
+    function mergeCandidates() {
+      return remote.filter((r) => !r.hidden && !isMerging(r._remoteId));
+    }
+
+    function getToken() {
+      try { return localStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; }
+    }
+    function setToken(value) {
+      try {
+        if (value) localStorage.setItem(TOKEN_KEY, value); else localStorage.removeItem(TOKEN_KEY);
+        return true;
+      } catch { return false; }
+    }
+
+    const b64decode = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), (c) => c.charCodeAt(0)));
+    function b64encode(text) {
+      const bytes = new TextEncoder().encode(text);
+      let bin = "";
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      return btoa(bin);
+    }
+
+    async function gh(token, method, body) {
+      const url = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}` + (method === "GET" ? `?ref=${GH.branch}` : "");
+      const resp = await fetch(url, {
+        method,
+        cache: "no-store",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28",
+          ...(body ? { "Content-Type": "application/json" } : {})
+        },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const error = new Error(`GitHub ${resp.status}: ${data.message || resp.statusText}`);
+        error.status = resp.status;
+        throw error;
+      }
+      return data;
+    }
+
+    async function markMerged(ids) {
+      if (!ids.length) return;
+      const now = dbApi.serverTimestamp();
+      await dbApi.update(releasesRef(), Object.fromEntries(ids.map((id) => [`${id}/_meta/mergedAt`, now])));
+    }
+
+    $("btn-merge").onclick = async () => {
+      const token = getToken();
+      if (!token) {
+        $("gh-settings").open = true;
+        $("gh-token").focus();
+        setStatus("Add a GitHub token first (below).", "err");
+        return;
+      }
+      const candidates = mergeCandidates();
+      if (!candidates.length) { setStatus("Nothing to merge (hidden drafts are skipped)."); return; }
+      const list = candidates.map((c) => `• ${c.date} ${c.title}`).join("\n");
+      if (!confirm(`Commit ${candidates.length} release(s) into assets/releases.json on GitHub?\n\n${list}`)) return;
+
+      merging = true;
+      renderLists();
+      setStatus("Merging…", "", true);
+      try {
+        const entries = candidates.map((c) => ({ id: c._remoteId, item: c }));
+        let commitUrl = null;
+        let finalText = null;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const file = await gh(token, "GET");
+          const { text, added } = mergeIntoReleasesText(b64decode(file.content), entries);
+          finalText = text;
+          if (!added.length) break; // already in the file (e.g. merged from another device)
+          try {
+            const res = await gh(token, "PUT", {
+              message: `releases: add ${added.length} from admin page\n\n${candidates.filter((c) => added.includes(c._remoteId)).map((c) => `- ${c.date} ${c.title}`).join("\n")}`,
+              content: b64encode(text),
+              sha: file.sha,
+              branch: GH.branch
+            });
+            commitUrl = res.commit && res.commit.html_url;
+            break;
+          } catch (error) {
+            if ((error.status === 409 || error.status === 422) && attempt < 2) continue; // file changed meanwhile, retry
+            throw error;
+          }
+        }
+        const inFile = firebaseIdsInText(finalText);
+        await markMerged(candidates.map((c) => c._remoteId).filter((id) => inFile.has(id)));
+        setStatus("Committed. GitHub Pages deploys it in a minute or two; the entries stay here until the deployed file has them, then they're removed from the database.",
+          "ok", true, commitUrl ? { href: commitUrl, text: "see commit" } : null);
+        startPrunePoll();
+      } catch (error) {
+        const hint = error.status === 401 ? " (token wrong or expired)" : error.status === 403 || error.status === 404 ? " (token needs Contents: Read and write on pjotrgerman.github.io)" : "";
+        setStatus(`Merge failed: ${error.message}${hint}`, "err", true);
+      } finally {
+        merging = false;
+        renderLists();
+      }
+    };
+
+    let pollTimer = null;
+    let pollUntil = 0;
+    async function pruneDeployed() {
+      const pending = mergingIds();
+      if (!pending.length) return 0;
+      let deployed;
+      try { deployed = await fetchStaticReleases("../assets/releases.json"); } catch { return pending.length; }
+      const live = new Set(deployed.map((i) => i && i.firebaseId).filter(Boolean));
+      const done = pending.filter((id) => live.has(id));
+      if (done.length) {
+        staticItems = deployed;
+        await dbApi.update(releasesRef(), Object.fromEntries(done.map((id) => [id, null])));
+        setStatus(`${done.length} merged release(s) are live from releases.json now, removed from the database.`, "ok");
+      }
+      return pending.length - done.length;
+    }
+    function startPrunePoll() {
+      pollUntil = Date.now() + 20 * 60 * 1000;
+      if (pollTimer) return;
+      const tick = async () => {
+        pollTimer = null;
+        const left = await pruneDeployed().catch(() => 1);
+        if (left > 0 && Date.now() < pollUntil) pollTimer = setTimeout(tick, 30000);
+      };
+      tick();
+    }
+
+    // ------------------------------------------------------------ gh settings
+    $("gh-token").value = getToken();
+    $("gh-save").onclick = () => {
+      const v = $("gh-token").value.trim();
+      setStatus(setToken(v) ? (v ? "Token saved in this browser." : "Token removed.") : "This browser won't store it (private mode?).", "ok");
+      renderLists();
+    };
+    $("gh-forget").onclick = () => {
+      setToken("");
+      $("gh-token").value = "";
+      setStatus("Token removed from this browser.", "ok");
+    };
+    $("gh-test").onclick = async () => {
+      const token = $("gh-token").value.trim() || getToken();
+      if (!token) { setStatus("Paste a token first.", "err"); return; }
+      try {
+        const file = await gh(token, "GET");
+        setStatus(`OK: the token can read ${GH.path} (${file.size} bytes). Writing is checked on the first merge.`, "ok");
+      } catch (error) {
+        setStatus(`Token test failed: ${error.message}`, "err", true);
+      }
+    };
+
+    // ------------------------------------------------------- repo data + lists
+    try {
+      staticItems = await fetchStaticReleases("../assets/releases.json");
+    } catch (error) {
+      setStatus(`Could not read assets/releases.json: ${error.message}`, "err", true);
+    }
+    const fill = (id, key) => {
+      const values = [...new Set(staticItems.map((i) => i[key]).filter((x) => typeof x === "string" && x.trim()))].sort();
+      $(id).innerHTML = values.map((x) => `<option value="${esc(x)}"></option>`).join("");
+    };
+    fill("dl-event", "event"); fill("dl-type", "type"); fill("dl-format", "format");
+    fill("dl-venue", "venue"); fill("dl-city", "city"); fill("dl-country", "country");
+    renderLists();
+    $("btn-new").onclick = () => openForm({ country: "Czech Republic" }, null);
+  </script>
+</body>
+</html>

@@ -4,10 +4,12 @@
  * Static parts (statement, education, research ...) live in cv.html.
  * "Selected works & performances" is generated from assets/releases.json
  * using the same rule as the portfolio print: only items with `"cv": true`.
- * To add or remove something from the CV, flip that flag in releases.json.
+ * To add or remove something from the CV, flip that flag in releases.json
+ * (or tick "CV" on admin/releases.html for entries added there).
  */
 
 import { escapeHtml, initBackLink, initPdfButton } from "./press-page.js";
+import { fetchAllReleases } from "./releases-source.js";
 
 const RELEASES_URL = "assets/releases.json";
 const SITE_URL = "https://pjotrgerman.xyz/";
@@ -189,11 +191,7 @@ async function loadWorks() {
     return;
   }
   try {
-    const response = await fetch(RELEASES_URL, { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const items = await response.json();
+    const items = await fetchAllReleases(RELEASES_URL);
     renderWorks(container, Array.isArray(items) ? items : []);
   } catch (error) {
     console.warn("CV: failed to load releases", error);
