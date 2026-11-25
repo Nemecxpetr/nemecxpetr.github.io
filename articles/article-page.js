@@ -37,7 +37,16 @@ import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
   const activeClass = "active";
   const pageBaseUrl = getPageBaseUrl();
   const searchParams = new URLSearchParams(window.location.search);
-  const articleKey = searchParams.get("article") || "";
+  // Old keys of renamed articles, so links like ?article=sound_article keep working.
+  const ARTICLE_KEY_ALIASES = { sound_article: "bassoon-techniques" };
+  const requestedArticleKey = searchParams.get("article") || "";
+  const articleKey = ARTICLE_KEY_ALIASES[requestedArticleKey] || requestedArticleKey;
+  if (articleKey !== requestedArticleKey) {
+    searchParams.set("article", articleKey);
+    const canonicalUrl = new URL(window.location.href);
+    canonicalUrl.search = searchParams.toString();
+    window.history.replaceState(null, "", canonicalUrl);
+  }
   const isArticleIndexMode = !articleKey;
   const requestedMapViewKey = String(searchParams.get("view") || "").trim();
   const printModeEnabled = isPrintModeEnabled(searchParams);
@@ -218,7 +227,8 @@ import { isAudioEnabled, playPluck, playSineTone } from "../js/audio-pluck.js";
   }
 
   async function buildArticleIndexMap(rawManifest) {
-    const articles = Array.isArray(rawManifest) ? rawManifest : [];
+    const articles = (Array.isArray(rawManifest) ? rawManifest : [])
+      .filter((entry) => entry && entry.hidden !== true);
     if (!articles.length) {
       throw new Error("Article manifest is empty.");
     }

@@ -111,6 +111,8 @@ Selecting a node in the map switches the visible section below.
 3. Add the article to:
 `articles/articles.json`
 
+To keep an article out of the `/articles/` map while leaving its direct link working, add `"hidden": true` to its manifest entry.
+
 4. Open:
 `/articles/?article=my-next-article`
 

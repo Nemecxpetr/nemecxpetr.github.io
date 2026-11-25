@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exercise 4: your own rules</title>
+<link rel="icon" type="image/png" href="../../favicon_1.png">
+<meta name="robots" content="noindex">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #ccc; font: 14px system-ui, sans-serif; }
+  #app { display: grid; grid-template-columns: 350px 1fr; height: 100%; }
+  @media (max-width: 760px) { #app { grid-template-columns: 1fr; grid-template-rows: 50% 50%; } }
+  #ui { padding: 12px; border-right: 1px solid #222; overflow-y: auto; }
+  .row { display: grid; grid-template-columns: 96px 1fr; gap: 8px; align-items: center; margin: 7px 0; }
+  select, button, input[type=number], textarea { font: inherit; background: #111; color: #ccc; border: 1px solid #444; border-radius: 4px; padding: 3px 6px; }
+  button { cursor: pointer; margin-right: 4px; }
+  textarea { width: 100%; box-sizing: border-box; font: 12px ui-monospace, Consolas, monospace; resize: vertical; }
+  h3 { margin: 14px 0 4px; font-size: 13px; color: #aaa; font-weight: 600; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #8ab4ff; outline-offset: 2px; }
+  #read { margin-top: 10px; line-height: 1.55; font-variant-numeric: tabular-nums; }
+  .small { color: #888; font-size: 12px; line-height: 1.45; margin-top: 6px; }
+  #err { color: #e8a; font-size: 12px; margin-top: 4px; min-height: 1em; }
+  #view { min-height: 0; display: flex; justify-content: center; align-items: center; }
+  #wrap { position: relative; height: 100%; aspect-ratio: 1; max-width: 100%; max-height: 100%; }
+  canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+  #zone { position: absolute; border: 1px dashed #666; pointer-events: none; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="ui">
+    <div><button id="run">Pause</button><button id="stepBtn">Step</button><button id="reset">Reset</button></div>
+    <div class="row"><label for="speed">speed</label><input id="speed" type="range" min="1" max="60" value="12"></div>
+    <div class="row"><label for="hist">history</label><input id="hist" type="range" min="0" max="0" value="0"></div>
+    <div class="small">History: drag the slider or use the left/right arrow keys to go back. Stepping from an old state continues from there (the rules cannot be run backwards, because collisions destroy information).</div>
+
+    <h3>Start and world</h3>
+    <div class="row"><label for="size">grid</label><select id="size"><option>96</option><option selected>160</option><option>256</option></select></div>
+    <div class="row"><label for="range">vector range</label><input id="range" type="range" min="1" max="8" value="3"></div>
+    <div class="row"><label for="area">start square</label><input id="area" type="range" min="5" max="100" value="40"></div>
+    <div class="row"><label for="dens">start density</label><input id="dens" type="range" min="0.1" max="100" value="50"></div>
+    <div class="row"><label for="zone_s">zone size</label><input id="zone_s" type="range" min="0" max="100" value="20"></div>
+    <div class="row"><label for="trail">trail</label><input id="trail" type="range" min="0" max="95" value="0"></div>
+    <div class="row"><label for="r3">rule 3</label><input id="r3" type="checkbox" checked></div>
+
+    <h3>Brush (on the canvas)</h3>
+    <div class="small">Drag = add genes. Shift-drag or right-drag = erase.</div>
+    <div class="row"><label for="brush">radius</label><input id="brush" type="range" min="0" max="12" value="3"></div>
+    <div class="row"><label for="brandom">random vector</label><input id="brandom" type="checkbox" checked></div>
+    <div class="row"><label>fixed vector</label><span><input id="bvx" type="number" value="1" style="width:46px"> <input id="bvy" type="number" value="0" style="width:46px"></span></div>
+;
+    <h3>Your rules (JavaScript, function bodies)</h3>
+    <div class="small">Each rule is called as <code>(x, y, a, c)</code>. <code>c</code> has: <code>c.gen, c.W, c.H, c.R, c.inZone(x,y), c.randVec(), c.rand(lo,hi), c.at(x,y)</code> (a vector or null), <code>c.nb(x,y)</code> (occupied neighbours, 0 to 8).</div>
+    <h3>collide: different genes land on one cell. a = list of vectors. Return a vector or null (erase).</h3>
+    <textarea id="h_collide" rows="2" spellcheck="false">return c.inZone(x, y) ? c.randVec() : null;</textarea>
+    <h3>survive: after the step, for each gene. a = [vx, vy]. Return false to delete it.</h3>
+    <textarea id="h_survive" rows="2" spellcheck="false">return true;</textarea>
+    <h3>spawn: for each empty cell. Return a vector to create a gene there, or null.</h3>
+    <textarea id="h_spawn" rows="2" spellcheck="false">return null;</textarea>
+    <div style="margin-top:6px"><button id="apply">Apply rules</button> <span class="small">(or Ctrl+Enter in a box)</span></div>
+    <div id="err"></div>
+    <div class="small">Examples to paste: survive <code>return c.nb(x,y) &lt; 6;</code> (overcrowding deletes), <code>return Math.random() &gt; 0.01;</code> (random death). spawn <code>return c.nb(x,y) === 3 ? c.randVec() : null;</code>.</div>
+
+    <div id="read"></div>
+    <div class="small">Zone dashed outline shows <code>c.inZone</code>. Values are in <code>window.signals</code> (F12). Space pauses.</div>
+  </div>
+  <div id="view"><div id="wrap"><canvas id="cv"></canvas><div id="zone"></div></div></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const off = document.createElement('canvas'), octx = off.getContext('2d');
+let W = 160, H = 160, gx, gy, gen = 0, lastColl = 0, lastKilled = 0, lastSpawned = 0, running = true;
+let rx, ry;                       // grid that c.at / c.nb read from
+let hist = [], viewIdx = 0;
+const HMAX = 240;
+const mod = (x, m) => ((x % m) + m) % m;
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const cl = v => Math.max(-127, Math.min(127, v | 0));
+window.signals = {};
+
+function randVec(R) { let x, y; do { x = ri(-R, R); y = ri(-R, R); } while (!x && !y); return [x, y]; }
+function inZone(x, y) {
+  const s = W * $('zone_s').value / 100;
+  return Math.abs(x + 0.5 - W / 2) < s / 2 && Math.abs(y + 0.5 - H / 2) < s / 2;
+}
+
+// ---------- user rules ----------
+const DEFAULT = { collide: 'return c.inZone(x, y) ? c.randVec() : null;', survive: 'return true;', spawn: 'return null;' };
+const hooks = {};
+function compile() {
+  const errs = [];
+  for (const k of ['collide', 'survive', 'spawn']) {
+    const src = $('h_' + k).value;
+    try { hooks[k] = { f: new Function('x', 'y', 'a', 'c', src), on: src.trim() !== DEFAULT[k] || k === 'collide' }; }
+    catch (e) { errs.push(k + ': ' + e.message); }
+  }
+  $('err').textContent = errs.join(' | ') || 'rules applied';
+}
+const C = {
+  gen: 0, W: 0, H: 0, R: 3, rand: ri, inZone,
+  randVec: () => randVec(C.R),
+  at: (x, y) => { const i = mod(y, H) * W + mod(x, W); return (rx[i] || ry[i]) ? [rx[i], ry[i]] : null; },
+  nb: (x, y) => {
+    let n = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const i = mod(y + dy, H) * W + mod(x + dx, W); if (rx[i] || ry[i]) n++;
+    }
+    return n;
+  }
+};
+
+// ---------- state ----------
+function snapshot() { hist.push({ gx: gx.slice(), gy: gy.slice(), gen }); if (hist.length > HMAX) hist.shift(); viewIdx = hist.length - 1; syncHist(); }
+function syncHist() { const h = $('hist'); h.max = hist.length - 1; h.value = viewIdx; }
+function loadHist(i) {
+  i = Math.max(0, Math.min(hist.length - 1, i)); viewIdx = i;
+  gx.set(hist[i].gx); gy.set(hist[i].gy); gen = hist[i].gen; syncHist(); draw();
+}
+
+function reset() {
+  W = H = parseInt($('size').value, 10);
+  cv.width = off.width = W; cv.height = off.height = H;
+  gx = new Int8Array(W * H); gy = new Int8Array(W * H); gen = 0;
+  const R = +$('range').value, side = Math.round(W * $('area').value / 100), d = $('dens').value / 100;
+  const x0 = Math.floor((W - side) / 2), y0 = Math.floor((H - side) / 2);
+  for (let y = y0; y < y0 + side; y++) for (let x = x0; x < x0 + side; x++)
+    if (Math.random() < d) { const [a, b] = randVec(R); gx[y * W + x] = a; gy[y * W + x] = b; }
+  hist = []; snapshot();
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  updateZone(); draw();
+}
+function updateZone() {
+  const z = $('zone'), f = $('zone_s').value / 100;
+  z.style.display = f > 0 ? 'block' : 'none';
+  z.style.width = z.style.height = (f * 100) + '%';
+  z.style.left = z.style.top = ((1 - f) / 2 * 100) + '%';
+}
+
+// ---------- one generation ----------
+function step() {
+  if (viewIdx < hist.length - 1) hist.length = viewIdx + 1;   // continue from an old state
+  const n = W * H, lx = new Int8Array(n), ly = new Int8Array(n), st = new Uint8Array(n), lists = new Map();
+  C.gen = gen; C.W = W; C.H = H; C.R = +$('range').value; rx = gx; ry = gy;
+  const r3 = $('r3').checked;
+  const idx = (x, y) => mod(y, H) * W + mod(x, W);
+  const put = (x, y, vx, vy) => {
+    const i = idx(x, y);
+    if (st[i] === 0) { lx[i] = vx; ly[i] = vy; st[i] = 1; }
+    else if (st[i] === 1) { if (lx[i] !== vx || ly[i] !== vy) { st[i] = 2; lists.set(i, [[lx[i], ly[i]], [vx, vy]]); } }
+    else { const L = lists.get(i); if (!L.some(g => g[0] === vx && g[1] === vy)) L.push([vx, vy]); }
+  };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x, vx = gx[i], vy = gy[i];
+    if (!vx && !vy) continue;
+    put(x + vx, y + vy, vx, vy);                                  // rule 1
+    const j = idx(x + vx, y + vy), sx = gx[j], sy = gy[j];
+    if (sx || sy) {
+      put(x + sx, y + sy, vx, vy);                                // rule 2
+      if (r3) { const k = idx(x + sx, y + sy), tx = gx[k], ty = gy[k]; if (tx || ty) put(x + tx, y + ty, vx, vy); }   // rule 3
+    }
+  }
+  const ngx = new Int8Array(n), ngy = new Int8Array(n); let coll = 0, killed = 0, spawned = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    if (st[i] === 1) { ngx[i] = lx[i]; ngy[i] = ly[i]; }
+    else if (st[i] === 2) {
+      coll++;
+      const r = hooks.collide.f(x, y, lists.get(i), C);          // YOUR collision rule
+      if (r && (cl(r[0]) || cl(r[1]))) { ngx[i] = cl(r[0]); ngy[i] = cl(r[1]); }
+    }
+  }
+  if (hooks.survive.on) {                                         // YOUR deletion rule
+    rx = ngx; ry = ngy; const kill = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if ((ngx[i] || ngy[i]) && hooks.survive.f(x, y, [ngx[i], ngy[i]], C) === false) kill.push(i);
+    }
+    for (const i of kill) { ngx[i] = 0; ngy[i] = 0; } killed = kill.length;
+  }
+  if (hooks.spawn.on) {                                           // YOUR creation rule
+    rx = ngx; ry = ngy; const add = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; if (ngx[i] || ngy[i]) continue;
+      const r = hooks.spawn.f(x, y, null, C);
+      if (r && (cl(r[0]) || cl(r[1]))) add.push([i, cl(r[0]), cl(r[1])]);
+    }
+    for (const [i, a, b] of add) { ngx[i] = a; ngy[i] = b; } spawned = add.length;
+  }
+  gx = ngx; gy = ngy; gen++; lastColl = coll; lastKilled = killed; lastSpawned = spawned;
+  snapshot();
+}
+
+// ---------- drawing ----------
+const colCache = new Map();
+function color(vx, vy) {
+  const key = vx * 256 + vy; let c = colCache.get(key);
+  if (!c) {
+    const h = (Math.atan2(vy, vx) * 180 / Math.PI + 360) % 360, s = 0.7, l = 0.6;
+    const f = k => { const q = (k + h / 30) % 12; return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(q - 3, 9 - q, 1)); };
+    c = [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)]; colCache.set(key, c);
+  }
+  return c;
+}
+function draw() {
+  const img = octx.createImageData(W, H), d = img.data;
+  for (let i = 0; i < W * H; i++) if (gx[i] || gy[i]) {
+    const [r, g, b] = color(gx[i], gy[i]); d[i * 4] = r; d[i * 4 + 1] = g; d[i * 4 + 2] = b; d[i * 4 + 3] = 255;
+  }
+  octx.putImageData(img, 0, 0);
+  ctx.fillStyle = `rgba(0,0,0,${1 - $('trail').value / 100})`; ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(off, 0, 0);
+}
+function updateSignals() {
+  let occ = 0; const set = new Set();
+  for (let i = 0; i < W * H; i++) if (gx[i] || gy[i]) { occ++; set.add(gx[i] * 256 + gy[i]); }
+  window.signals = { gen, occupied: occ, collisions: lastColl, killed: lastKilled, spawned: lastSpawned, distinct: set.size };
+  $('read').innerHTML = `generation ${gen}<br>occupied cells ${occ}<br>collisions ${lastColl}<br>deleted by your rule ${lastKilled}<br>created by your rule ${lastSpawned}<br>distinct vectors ${set.size}`;
+}
+
+// ---------- brush ----------
+function paint(e) {
+  const r = cv.getBoundingClientRect();
+  const px = Math.floor((e.clientX - r.left) / r.width * W), py = Math.floor((e.clientY - r.top) / r.height * H);
+  const rad = +$('brush').value, erase = e.shiftKey || (e.buttons & 2) || e.button === 2, R = +$('range').value;
+  for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) {
+    if (dx * dx + dy * dy > rad * rad) continue;
+    const i = mod(py + dy, H) * W + mod(px + dx, W);
+    if (erase) { gx[i] = 0; gy[i] = 0; }
+    else {
+      const v = $('brandom').checked ? randVec(R) : [cl(+$('bvx').value), cl(+$('bvy').value)];
+      if (v[0] || v[1]) { gx[i] = v[0]; gy[i] = v[1]; }
+    }
+  }
+  draw();
+}
+cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); paint(e); });
+cv.addEventListener('pointermove', e => { if (e.buttons) paint(e); });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+// ---------- loop and controls ----------
+let acc = 0, last = performance.now();
+function guarded(fn) { try { fn(); } catch (err) { running = false; $('run').textContent = 'Run'; $('err').textContent = 'Error in your rule: ' + err.message; } }
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (running) {
+    acc += dt * +$('speed').value;
+    const k = Math.min(Math.floor(acc), 10); acc -= Math.floor(acc);
+    guarded(() => { for (let i = 0; i < k; i++) step(); });
+    if (k) draw();
+  }
+  updateSignals();
+  requestAnimationFrame(frame);
+}
+$('run').onclick = () => { running = !running; $('run').textContent = running ? 'Pause' : 'Run'; };
+$('stepBtn').onclick = () => { running = false; $('run').textContent = 'Run'; guarded(step); draw(); };
+$('reset').onclick = reset;
+$('size').onchange = reset;
+$('zone_s').oninput = updateZone;
+$('apply').onclick = compile;
+$('hist').oninput = () => { running = false; $('run').textContent = 'Run'; loadHist(+$('hist').value); };
+for (const k of ['collide', 'survive', 'spawn'])
+  $('h_' + k).addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') compile(); });
+addEventListener('keydown', e => {
+  if (['TEXTAREA', 'INPUT', 'SELECT', 'BUTTON'].includes(e.target.tagName) && e.target.type !== 'range') return;
+  if (e.code === 'Space') { e.preventDefault(); $('run').click(); }
+  if (e.key === 'ArrowLeft') { running = false; $('run').textContent = 'Run'; loadHist(viewIdx - 1); }
+  if (e.key === 'ArrowRight') { running = false; $('run').textContent = 'Run'; loadHist(viewIdx + 1); }
+});
+
+compile();
+reset();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

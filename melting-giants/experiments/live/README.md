@@ -1,12 +1,14 @@
-# Live performance (07_live)
+# Live performance (live.html)
 
-- `../07_live.html`: the **player** page. The audience opens it and picks **cosi** or **čímsi**.
-  `07_live.html#cosi` / `#cimsi` skip the chooser (useful for QR codes).
-- `../07_live_admin.html`: the **admin** page. Don't link it anywhere.
+- `../live.html`: the **player** page. The audience opens it and picks **cosi** or **čímsi**.
+  `live.html#cosi` / `#cimsi` skip the chooser (useful for QR codes).
+- `../live_admin.html`: the **admin** page. Don't link it anywhere.
 - `sim.js`: the phase CA from 03_phase plus the touch layer and touch map, shared by both pages.
 - `net.js`: the connection between admin and players (local or Firebase).
 - `config.js`: Firebase config. `null` means local mode.
 - QR code for the chooser page: `assets/qr_07_live.svg` (print) and `assets/qr_07_live.png`.
+  It encodes the old address `/cellular/experiments/07_live.html`, which now redirects here
+  (keeping `#cosi` / `?session=`). Regenerate it if you want it to point at `live.html` directly.
   Made with `segno` (`segno.make(url, error='h')`).
 - Every phone starts with random liquid plus an organic ice seed (`iceSeed()` in `sim.js`, a new
   shape each time). The admin's **ice seed** button drops another one.
@@ -124,7 +126,7 @@ latecomers join mid-glide.
 
 With `config.js` left as `null`, open the admin page and a few player tabs **in the same browser**.
 A local server is fine, e.g. `python -m http.server` in the repo root, then
-`http://localhost:8000/cellular/experiments/07_live_admin.html`.
+`http://localhost:8000/melting-giants/experiments/live_admin.html`.
 Adding `?local` to both URLs forces local mode even after Firebase is configured.
 
 ## Real phones: Firebase (about 10 minutes, free tier is plenty)
