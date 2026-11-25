@@ -60,3 +60,6 @@ article_archive.txt
 
 # Hidden stuff
 assets/hidden_promo/*
+
+# Melting Giants article: offline until rewritten (files kept locally)
+articles/melting-giants/

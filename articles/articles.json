@@ -4,7 +4,8 @@
     "title": "Melting Giants",
     "url": "melting-giants/",
     "content": "melting-giants/article.html",
-    "map": "melting-giants/map.json"
+    "map": "melting-giants/map.json",
+    "hidden": true
   },
   {
     "key": "czech-scene-sound",

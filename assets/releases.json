@@ -24,11 +24,7 @@
       "city": "Brno",
       "country": "Czech Republic",
       "links": {
-        "primary": {
-          "label": "About the piece",
-          "url": "articles/melting-giants/",
-          "platform": "website"
-        },
+        "primary": null,
         "secondary": []
       }
   },
@@ -45,11 +41,7 @@
       "city": "Praha",
       "country": "Czech Republic",
       "links": {
-        "primary": {
-          "label": "About the piece",
-          "url": "articles/melting-giants/",
-          "platform": "website"
-        },
+        "primary": null,
         "secondary": []
       }
   },
